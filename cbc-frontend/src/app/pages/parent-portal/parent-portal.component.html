@@ -1,0 +1,215 @@
+<div class="parent-portal-container">
+  <div class="header">
+    <h1>Parent Portal</h1>
+    <p>Monitor your child's academic progress and pathway</p>
+  </div>
+
+  <!-- Child Selection -->
+  <div *ngIf="children.length > 0" class="child-selector">
+    <label>Select Child:</label>
+    <select [(ngModel)]="selectedChildId" (change)="onChildChange()">
+      <option value="">Choose a student</option>
+      <option *ngFor="let child of children" [value]="child._id">
+        {{ child.firstName }} {{ child.lastName }} - {{ child.admissionNumber }}
+      </option>
+    </select>
+  </div>
+
+  <div *ngIf="children.length > 1" class="children-tabs">
+    <h3>My Children</h3>
+    <div class="children-tab-list">
+      <button
+        type="button"
+        *ngFor="let child of children"
+        [class.active]="child._id === selectedChildId"
+        (click)="selectChild(child._id)"
+      >
+        {{ child.firstName }} {{ child.lastName }}
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="children.length === 0" class="empty-state">
+    <p>No students are currently linked to your parent account.</p>
+    <p>Please contact your school administrator to add your child(ren).</p>
+  </div>
+
+  <!-- Child Profile Summary -->
+  <div *ngIf="selectedChild" class="child-summary-card">
+    <h2>{{ selectedChild.firstName }} {{ selectedChild.lastName }}</h2>
+    <div class="summary-details">
+      <p><strong>Admission Number:</strong> {{ selectedChild.admissionNumber }}</p>
+      <p><strong>Class:</strong> {{ selectedChild.classId?.name }}</p>
+      <p><strong>Status:</strong> <span class="status-active">Active</span></p>
+    </div>
+  </div>
+
+  <!-- Performance Section -->
+  <div *ngIf="selectedChild" class="performance-section">
+    <h3>Academic Performance</h3>
+    
+    <div class="performance-grid">
+      <div class="performance-card" *ngFor="let subject of studentPerformance?.subjects">
+        <h4>{{ subject.name }}</h4>
+        <div class="score-display">
+          <span class="score">{{ subject.score || 'N/A' }}</span>
+          <span class="grade">{{ subject.grade || '-' }}</span>
+        </div>
+        <p class="exam-type">{{ subject.examType }}</p>
+      </div>
+    </div>
+
+    <div *ngIf="studentPerformance?.overallGPA" class="gpa-card">
+      <h4>Overall GPA</h4>
+      <p class="gpa-value">{{ studentPerformance.overallGPA | number: '1.2-2' }}</p>
+    </div>
+
+    <div *ngIf="studentPerformance?.subjects?.length" class="stats-section">
+      <h4>Performance Statistics</h4>
+      <div class="stats-grid">
+        <div class="stats-card">
+          <span class="stats-label">Subjects / Exams</span>
+          <strong>{{ performanceStats?.examCount || 0 }}</strong>
+        </div>
+        <div class="stats-card">
+          <span class="stats-label">Average Score</span>
+          <strong>{{ performanceStats?.averageScore | number: '1.2-2' }}</strong>
+        </div>
+        <div class="stats-card">
+          <span class="stats-label">Highest Score</span>
+          <strong>{{ performanceStats?.highestScore || 0 }}</strong>
+        </div>
+        <div class="stats-card">
+          <span class="stats-label">Lowest Score</span>
+          <strong>{{ performanceStats?.lowestScore || 0 }}</strong>
+        </div>
+        <div class="stats-card">
+          <span class="stats-label">Strong Subjects</span>
+          <strong>{{ performanceStats?.strongSubjects || 0 }}</strong>
+        </div>
+        <div class="stats-card">
+          <span class="stats-label">Needs Support</span>
+          <strong>{{ performanceStats?.needsSupport || 0 }}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pathway Section -->
+  <div *ngIf="selectedChild && displayedPathway" class="pathway-section">
+    <h3>{{ pathwayCaption }}</h3>
+    <div class="pathway-card">
+      <h4>{{ displayedPathway.name || displayedPathway.pathwayId?.name || 'Assigned pathway' }}</h4>
+      <p><strong>Code:</strong> {{ displayedPathway.code || displayedPathway.pathwayId?.code || 'N/A' }}</p>
+      <p *ngIf="currentPathway"><strong>Status:</strong> {{ currentPathway.status || 'N/A' }}</p>
+      <p *ngIf="currentPathway"><strong>Selected:</strong> {{ currentPathway.selectedDate | date: 'mediumDate' }}</p>
+      <p *ngIf="topRecommendedPathway && currentPathway"><strong>Minimum GPA:</strong> {{ topRecommendedPathway.minimumGPA ?? 'None' }}</p>
+      <p *ngIf="topRecommendedPathway && currentPathway"><strong>Your GPA:</strong> {{ pathwayRecommendations.studentGPA | number: '1.2-2' }} / 5.0</p>
+      <p *ngIf="!topRecommendedPathway && currentPathway" class="note">This is the child's current assigned pathway.</p>
+      <p *ngIf="topRecommendedPathway && currentPathway" class="note">This view shows the top pathway recommendation for your child.</p>
+    </div>
+  </div>
+
+  <div *ngIf="selectedChild && !displayedPathway" class="pathway-section">
+    <h3>Recommended Pathway</h3>
+    <div class="pathway-card">
+      <p>No pathway recommendations are available for this student.</p>
+    </div>
+  </div>
+
+  <!-- Reports Section -->
+  <div *ngIf="selectedChild" class="reports-section">
+    <h3>Progress Reports</h3>
+    
+    <div class="reports-list" *ngIf="studentReports.length > 0; else noReports">
+      <div class="report-card" *ngFor="let report of studentReports">
+        <div class="report-header">
+          <span class="report-type">{{ report.reportType }}</span>
+          <span class="report-date">{{ report.generatedDate | date: 'short' }}</span>
+        </div>
+        <div *ngIf="report.reportSummary" class="report-summary-snippet">
+          {{ report.reportSummary }}
+        </div>
+        <button type="button" class="btn-view" (click)="viewReport(report)">View Report</button>
+        <button type="button" class="btn-delete" (click)="deleteReport(report)">Delete</button>
+      </div>
+    </div>
+
+    <ng-template #noReports>
+      <p class="no-data">No reports available yet</p>
+    </ng-template>
+  </div>
+
+  <!-- Loading & Error States -->
+  <div *ngIf="loading" class="loading">
+    <p>Loading data...</p>
+  </div>
+
+  <div *ngIf="error" class="error-message">
+    {{ error }}
+  </div>
+
+</div>
+
+<!-- Report Modal -->
+<div class="modal-backdrop" *ngIf="showReportModal">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <h3>Report Details</h3>
+      <button type="button" class="btn-close" (click)="closeReportModal()">×</button>
+    </div>
+
+    <div class="modal-body" *ngIf="activeReport; else loadingReport">
+      <div class="report-summary">
+        <div class="summary-row">
+          <span class="summary-label">Type:</span>
+          <span>{{ activeReport.reportType || 'N/A' }}</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Generated:</span>
+          <span>{{ activeReport.generatedDate | date: 'medium' }}</span>
+        </div>
+        <div class="summary-row" *ngIf="activeReport.reportPeriod">
+          <span class="summary-label">Period:</span>
+          <span>{{ activeReport.reportPeriod.startDate | date: 'mediumDate' }} — {{ activeReport.reportPeriod.endDate | date: 'mediumDate' }}</span>
+        </div>
+        <div class="summary-row" *ngIf="activeReport.reportSummary">
+          <span class="summary-label">Summary:</span>
+          <span>{{ activeReport.reportSummary }}</span>
+        </div>
+      </div>
+      <ng-template #noPerformance>
+        <div class="detail-block">
+          <p>No performance summary available for this report.</p>
+        </div>
+      </ng-template>
+
+      <div class="detail-block" *ngIf="activeReport.pathwayRecommendation; else noPathway">
+        <h4>Pathway Recommendation</h4>
+        <p><strong>Pathway:</strong> {{ activeReport.pathwayRecommendation.recommendedPathway?.name || 'N/A' }}</p>
+        <p><strong>Student GPA:</strong> {{ activeReport.pathwayRecommendation.studentGPA ?? 'N/A' }}</p>
+      </div>
+      <ng-template #noPathway>
+        <div class="detail-block">
+          <p>No pathway recommendation available for this report.</p>
+        </div>
+      </ng-template>
+
+      <div class="detail-block" *ngIf="activeReport.teacherNotes">
+        <h4>Teacher Notes</h4>
+        <p>{{ activeReport.teacherNotes }}</p>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" (click)="downloadReportPdf()">Download PDF</button>
+        <button type="button" class="btn btn-primary" (click)="closeReportModal()">Close</button>
+      </div>
+    </div>
+
+    <ng-template #loadingReport>
+      <div class="modal-body">
+        <p>Loading report...</p>
+      </div>
+    </ng-template>
+  </div>
+</div>

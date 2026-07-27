@@ -1,0 +1,3 @@
+packages:
+  - 'cbc-backend'
+  - 'cbc-frontend'

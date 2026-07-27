@@ -1,0 +1,649 @@
+<div class="pathways-container">
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <h1>CBE Pathways</h1>
+        <p>Select and manage student pathways</p>
+      </div>
+      <button
+        (click)="openCreateModal()"
+        class="btn-add"
+        *ngIf="isTeacher || isAdmin">
+        + Add Pathway
+      </button>
+    </div>
+
+    <!-- View Mode Tabs -->
+    <div class="view-mode-tabs">
+      <button 
+        (click)="switchViewMode('overview')" 
+        class="tab-btn"
+        [class.active]="viewMode === 'overview'">
+        Overview
+      </button>
+      <button 
+        (click)="switchViewMode('tracking')" 
+        class="tab-btn"
+        [class.active]="viewMode === 'tracking'">
+        Track Results
+      </button>
+      <button 
+        (click)="switchViewMode('placement')" 
+        class="tab-btn"
+        [class.active]="viewMode === 'placement'">
+        Student Placement
+      </button>
+    </div>
+  </div>
+
+  <!-- Success Message -->
+  <div *ngIf="success" class="alert alert-success">
+    {{ success }}
+  </div>
+
+  <!-- Error Message -->
+  <div *ngIf="error" class="alert alert-error">
+    {{ error }}
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-state">
+    <p>Loading pathways...</p>
+  </div>
+
+  <!-- Pathways List (Overview Mode) -->
+  <div class="pathways-section" *ngIf="!loading && viewMode === 'overview'">
+    <div class="pathways-section-header">
+      <h2>Available Pathways</h2>
+      <!-- Class Filter -->
+      <div class="class-filter" *ngIf="isTeacher || isAdmin">
+        <label for="classFilter">Filter by Class:</label>
+        <select [(ngModel)]="selectedFilterClass" (change)="onClassFilterChange()" class="form-control" id="classFilter">
+          <option [ngValue]="null">All Classes</option>
+          <option *ngFor="let cls of classes" [ngValue]="cls._id">
+            {{ cls.name }} {{ cls.section ? '(' + cls.section + ')' : '' }}
+          </option>
+        </select>
+      </div>
+    </div>
+    <div class="pathways-grid" *ngIf="pathways.length > 0; else noPathways">
+      <div class="pathway-card" *ngFor="let pathway of pathways">
+        <div class="pathway-header">
+          <h3>{{ pathway.name }}</h3>
+          <span class="pathway-code">{{ pathway.code }}</span>
+        </div>
+        <p class="pathway-description">{{ pathway.description }}</p>
+        
+        <div class="pathway-details">
+          <div class="detail-item">
+            <strong>Career Paths:</strong>
+            <div class="tags">
+              <span class="tag" *ngFor="let career of pathway.careerPaths">{{ career }}</span>
+            </div>
+          </div>
+          
+          <div class="detail-item">
+            <strong>Required Competencies:</strong>
+            <div class="tags">
+              <span class="competency-tag" *ngFor="let comp of pathway.requiredCompetencies">{{ comp }}</span>
+            </div>
+          </div>
+          
+          <div class="detail-item">
+            <strong>Pathway Type:</strong>
+            <span>{{ pathway.pathwayType ? (pathway.pathwayType === 'subject-based' ? 'Subject-Based' : 'Marks-Based') : 'N/A' }}</span>
+          </div>
+          
+          <div class="detail-item">
+            <strong>GPA Range:</strong>
+            <span>{{ pathway.gpaRange?.minimumGPA ?? 'N/A' }} - {{ pathway.gpaRange?.maximumGPA ?? 'N/A' }}</span>
+          </div>
+
+          <!-- Students in Pathway (filtered by class) -->
+          <div class="detail-item">
+            <strong>Students Assigned ({{ getStudentsInPathwayByClass(pathway._id).length }}):</strong>
+            <div class="students-list">
+              <span class="student-tag" *ngFor="let student of getStudentsInPathwayByClass(pathway._id)">
+                {{ student.firstName }} {{ student.lastName }}
+              </span>
+              <span class="no-students" *ngIf="getStudentsInPathwayByClass(pathway._id).length === 0">
+                No students assigned yet
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="pathway-actions">
+          <button class="btn-edit" (click)="editPathwayDetails(pathway)" *ngIf="isAdmin" title="Edit pathway details">
+            <span>📝</span> Edit
+          </button>
+          <button class="btn-delete" (click)="confirmDeletePathway(pathway)" *ngIf="isAdmin" title="Delete pathway">
+            <span>🗑</span> Delete
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <ng-template #noPathways>
+      <p class="no-data">No pathways available. Create one to get started.</p>
+    </ng-template>
+  </div>
+
+  <!-- Student Pathway Status -->
+  <div class="student-pathway-section" *ngIf="currentStudentPathway">
+    <h2>Your Current Pathway</h2>
+    <div class="pathway-status-card">
+      <h3>{{ currentStudentPathway.pathwayId?.name }}</h3>
+      <p><strong>Status:</strong> <span [class]="'status-' + currentStudentPathway.status">{{ currentStudentPathway.status }}</span></p>
+      <p><strong>Selected Date:</strong> {{ currentStudentPathway.selectedDate | date: 'short' }}</p>
+      <p *ngIf="currentStudentPathway.approvalDate">
+        <strong>Approved Date:</strong> {{ currentStudentPathway.approvalDate | date: 'short' }}
+      </p>
+      <p *ngIf="currentStudentPathway.notes">
+        <strong>Notes:</strong> {{ currentStudentPathway.notes }}
+      </p>
+      
+      <div class="student-actions">
+        <button class="btn-secondary" (click)="loadStudentGPA()">View My GPA</button>
+        <button class="btn-secondary" (click)="getPathwayRecommendations()">See Recommendations</button>
+        <button class="btn-warning" (click)="autoPlaceStudentInPathway()" [disabled]="autoPlacingStudent">
+          {{ autoPlacingStudent ? 'Processing...' : 'Auto-place Based on Performance' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Student Placement Testing (Placement Mode) -->
+  <div class="placement-section" *ngIf="viewMode === 'placement'">
+    <h2>Student Pathway Placement Testing</h2>
+
+    <div class="placement-controls">
+      <div class="form-group">
+        <label>Select Class</label>
+        <select [(ngModel)]="selectedClass" (ngModelChange)="onSelectedClassChange($event)" class="form-control">
+          <option [ngValue]="null">Choose a class</option>
+          <option *ngFor="let cls of classes" [ngValue]="cls">
+            {{ cls.name }} {{ cls.section ? '(' + cls.section + ')' : '' }}
+          </option>
+        </select>
+      </div>
+
+      <button 
+        (click)="loadPlacementForClass()" 
+        class="btn-primary"
+        [disabled]="!selectedClass || placementLoading">
+        {{ placementLoading ? 'Loading...' : 'Load & Calculate Placements' }}
+      </button>
+    </div>
+
+    <div class="placement-controls" *ngIf="subjects.length > 0">
+      <div class="form-group subject-picker-group">
+        <label>Pick Subjects</label>
+        <button class="btn-secondary" (click)="openSubjectPickerModal()">
+          {{ selectedSubjects.length > 0 ? 'Edit selected subjects' : 'Select subjects' }}
+        </button>
+        <small class="form-text text-muted">Open the subject picker to choose one or more subjects for pathway calculation.</small>
+      </div>
+    </div>
+
+    <div *ngIf="selectedSubjects.length > 0" class="placement-summary">
+      <p><strong>Using subjects:</strong> {{ getSelectedSubjectNames().join(', ') || 'All subjects' }}</p>
+      <button class="btn-link" (click)="openSubjectPickerModal()">Change subjects</button>
+    </div>
+
+    <div class="modal-overlay" *ngIf="showSubjectPickerModal" (click)="closeSubjectPickerModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>Select Subjects</h2>
+          <button class="close-btn" (click)="closeSubjectPickerModal()">×</button>
+        </div>
+        <div class="modal-body">
+          <div *ngIf="subjects.length === 0" class="no-data">
+            No subjects available for this class.
+          </div>
+          <div class="subject-list" *ngIf="subjects.length > 0">
+            <div class="subject-item" *ngFor="let subject of subjects">
+              <label>
+                <input
+                  type="checkbox"
+                  [checked]="tempSelectedSubjects.includes(subject._id)"
+                  (change)="toggleSubjectSelection(subject._id)"
+                />
+                {{ subject.name }}
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="resetSubjectSelection()">Clear selection</button>
+          <button class="btn-cancel" (click)="closeSubjectPickerModal()">Cancel</button>
+          <button class="btn-primary" (click)="saveSubjectSelection()">
+            Save subjects
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="placementError" class="alert alert-error">
+      {{ placementError }}
+    </div>
+
+    <div class="modal-overlay" *ngIf="showStudentContributionModal" (click)="closeStudentContributionModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>{{ selectedStudentContribution?.studentName }} - Subject Contributions</h2>
+          <button class="close-btn" (click)="closeStudentContributionModal()">×</button>
+        </div>
+        <div class="modal-body">
+          <div *ngIf="selectedStudentContribution?.subjectContributions?.length > 0" class="contribution-list">
+            <div *ngFor="let subject of selectedStudentContribution.subjectContributions" class="contribution-item">
+              <span class="subject-name">{{ subject.subjectName }}</span>
+              <span class="subject-average">{{ subject.averageMarks | number:'1.2-2' }} avg marks</span>
+            </div>
+          </div>
+          <div *ngIf="!selectedStudentContribution?.subjectContributions?.length" class="no-data">
+            No subject contributions available for this student.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-primary" (click)="closeStudentContributionModal()">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Student Placements Table -->
+    <div class="placement-results" *ngIf="studentPlacements.length > 0">
+      <div class="placement-table-wrapper">
+        <div class="placement-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Student Name</th>
+                <th>View</th>
+                <th>Adm No.</th>
+                <th>Average Score</th>
+                <th>GPA</th>
+                <th>Grade</th>
+                <th>Recommended Pathway</th>
+                <th>Pathway Code</th>
+                <th>Min GPA</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let placement of studentPlacements" [class.high-performer]="placement.gpa >= 3.5">
+                <td>{{ placement.studentName }}</td>
+                <td>
+                  <button class="btn-icon" (click)="openStudentContributionModal(placement)">
+                    <span aria-hidden="true">👁️</span>
+                  </button>
+                </td>
+                <td>{{ placement.admissionNumber }}</td>
+                <td class="score-cell">{{ placement.averageScore }}</td>
+                <td class="gpa-cell">{{ placement.gpa }}</td>
+                <td>
+                  <span class="grade-badge" [ngClass]="'grade-' + placement.grade">
+                    {{ placement.grade }}
+                  </span>
+                </td>
+                <td class="pathway-cell">{{ placement.recommendedPathway?.name || 'N/A' }}</td>
+                <td class="code-cell">{{ placement.recommendedPathway?.code || 'N/A' }}</td>
+                <td class="min-gpa-cell">{{ placement.recommendedPathway?.gpaRange?.minimumGPA ?? placement.recommendedPathway?.minimumGPA ?? 'N/A' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Subject contributions moved to the table 'View' button modal; removed card grid per request -->
+    </div>
+
+    <div *ngIf="!placementLoading && studentPlacements.length === 0 && selectedClass" class="no-data">
+      <p>No students found or no performance data available for this class.</p>
+    </div>
+
+    <div *ngIf="!placementLoading && !selectedClass" class="no-data">
+      <p>Select a class to view student pathway placements based on their performance.</p>
+    </div>
+  </div>
+
+  <!-- Analytics -->
+  <div class="analytics-section" *ngIf="isTeacher || isAdmin && viewMode === 'overview'">
+    <h2>Pathway Analytics</h2>
+    <div class="analytics-grid">
+      <div class="analytics-card" *ngFor="let stat of pathwayStats">
+        <h4>{{ stat.pathwayName }}</h4>
+        <p class="stat-number">{{ stat.studentCount }} Students</p>
+        <p class="stat-percentage">{{ getPercentage(stat.studentCount) }}%</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Pathway Modal -->
+  <div class="modal-overlay" *ngIf="showEditPathwayModal" (click)="closeEditPathwayModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Assign Students to {{ editingPathway?.name }}</h2>
+        <button class="close-btn" (click)="closeEditPathwayModal()">×</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-section">
+          <label>Select Students to Assign</label>
+          <div class="students-selection">
+            <div class="student-checkbox" *ngFor="let student of allStudents">
+              <input 
+                type="checkbox" 
+                [checked]="isStudentAssigned(student._id)"
+                (change)="toggleStudentAssignment(student)">
+              <span>{{ student.firstName }} {{ student.lastName }} (Adm: {{ student.admissionNumber }})</span>
+            </div>
+          </div>
+          <div class="no-students-message" *ngIf="allStudents.length === 0">
+            No students available
+          </div>
+        </div>
+
+        <div class="currently-assigned">
+          <h4>Currently Assigned ({{ getStudentsInPathway(editingPathway?._id).length }})</h4>
+          <div class="assigned-list">
+            <span class="assigned-tag" *ngFor="let student of getStudentsInPathway(editingPathway?._id)">
+              {{ student.firstName }} {{ student.lastName }}
+              <button class="remove-btn" (click)="unassignStudent(student._id)">×</button>
+            </span>
+            <span class="none" *ngIf="getStudentsInPathway(editingPathway?._id).length === 0">
+              None yet
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="closeEditPathwayModal()">Cancel</button>
+        <button class="btn-save" (click)="savePathwayAssignments()" [disabled]="isSubmitting">
+          {{ isSubmitting ? 'Saving...' : 'Save Changes' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results Tracking (Tracking Mode) -->
+  <div class="tracking-section" *ngIf="viewMode === 'tracking' && (isTeacher || isAdmin)">
+    <h2>Results Tracking</h2>
+
+    <div class="tracking-controls">
+      <div class="form-group">
+        <label>Academic Year</label>
+        <input [(ngModel)]="trackingFilters.academicYear" class="form-control" />
+      </div>
+
+      <div class="form-group">
+        <label>Term</label>
+        <select [(ngModel)]="trackingFilters.term" class="form-control">
+          <option *ngFor="let term of terms" [value]="term">{{ term }}</option>
+        </select>
+      </div>
+
+      <button class="btn-primary tracking-refresh" (click)="refreshPathwayTracking()">Refresh Tracking</button>
+      <button class="btn-secondary tracking-refresh" (click)="resetTrackingYearToCurrent()">
+        Reset to Current Year
+      </button>
+    </div>
+
+    <div class="tracking-card" *ngIf="trackingLoading">
+      <p class="no-data">Loading pathway results...</p>
+    </div>
+
+    <div class="tracking-card" *ngIf="!trackingLoading && pathwayTracking">
+      <div class="tracking-summary">
+        <div>
+          <h3>{{ pathwayTracking.pathway.name }}</h3>
+          <p>{{ pathwayTracking.pathway.code }}</p>
+        </div>
+
+        <div class="tracking-metrics">
+          <div>
+            <strong>{{ pathwayTracking.totalStudents }}</strong>
+            <span>Students</span>
+          </div>
+          <div>
+            <strong>{{ pathwayTracking.averageCompletionRate }}%</strong>
+            <span>Average Completion</span>
+          </div>
+          <div>
+            <strong>{{ pathwayTracking.averageScore }}</strong>
+            <span>Average Score</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="tracking-table" *ngIf="pathwayTracking.students.length > 0; else noTrackedStudents">
+        <div class="tracking-row tracking-row-head">
+          <span>Student</span>
+          <span>Adm No.</span>
+          <span>Completion</span>
+          <span>Average</span>
+        </div>
+
+        <div class="tracking-row" *ngFor="let student of pathwayTracking.students">
+          <span>{{ student.studentName }}</span>
+          <span>{{ student.admissionNumber }}</span>
+          <span>{{ student.completedRequiredSubjects }}/{{ student.requiredSubjects }}</span>
+          <span>
+            <span class="score-pill" [ngClass]="getTrackingAverageColor(student.averageScore)">{{ student.averageScore }}</span>
+          </span>
+        </div>
+      </div>
+
+      <ng-template #noTrackedStudents>
+        <p class="no-data">No tracked results yet for this pathway.</p>
+      </ng-template>
+    </div>
+  </div>
+
+  <!-- Create Pathway Modal -->
+  <div class="modal-overlay" *ngIf="showCreateModal" (click)="closeCreateModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ editingPathwayId ? 'Edit Pathway' : 'Create New Pathway' }}</h2>
+        <button class="modal-close" (click)="closeCreateModal()">×</button>
+      </div>
+
+      <div class="modal-body">
+        <div *ngIf="error" class="alert alert-error">
+          {{ error }}
+        </div>
+
+        <div class="form-group">
+          <label>Pathway Code *</label>
+          <input 
+            [(ngModel)]="pathwayForm.code" 
+            placeholder="e.g., STEM, ARTS"
+            class="form-control"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Pathway Name *</label>
+          <input 
+            [(ngModel)]="pathwayForm.name" 
+            placeholder="e.g., Science Technology Engineering Mathematics"
+            class="form-control"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Description *</label>
+          <textarea 
+            [(ngModel)]="pathwayForm.description" 
+            placeholder="Describe the pathway"
+            rows="3"
+            class="form-control">
+          </textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Career Paths (comma-separated)</label>
+          <input 
+            [(ngModel)]="pathwayForm.careerPaths" 
+            placeholder="e.g., Engineer, Scientist, Researcher"
+            class="form-control"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Required Competencies (comma-separated)</label>
+          <input 
+            [(ngModel)]="pathwayForm.requiredCompetencies" 
+            placeholder="e.g., Problem Solving, Critical Thinking"
+            class="form-control"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Pathway Type</label>
+          <select [(ngModel)]="pathwayForm.pathwayType" class="form-control">
+            <option value="subject-based">Subject-Based</option>
+            <option value="marks-based">Marks-Based</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Minimum GPA (0-5.0)</label>
+          <input 
+            [(ngModel)]="pathwayForm.gpaRange.minimumGPA" 
+            type="number"
+            step="0.1"
+            min="0"
+            max="5.0"
+            class="form-control"
+            placeholder="e.g., 1.0"
+          />
+          <small class="form-text text-muted">Minimum GPA for students to be eligible for this pathway</small>
+        </div>
+
+        <div class="form-group">
+          <label>Maximum GPA (0-5.0)</label>
+          <input 
+            [(ngModel)]="pathwayForm.gpaRange.maximumGPA" 
+            type="number"
+            step="0.1"
+            min="0"
+            max="5.0"
+            class="form-control"
+            placeholder="e.g., 2.0"
+          />
+          <small class="form-text text-muted">Maximum GPA for students to be eligible for this pathway</small>
+        </div>
+
+        <div class="form-group">
+          <label>Required Subjects (Subject IDs, comma-separated)</label>
+          <input 
+            [(ngModel)]="pathwayForm.requiredSubjects" 
+            placeholder="Paste subject IDs separated by commas"
+            class="form-control"
+          />
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeCreateModal()" [disabled]="isSubmitting">
+          Cancel
+        </button>
+        <button class="btn-primary" (click)="savePathway()" [disabled]="isSubmitting">
+          {{ isSubmitting ? 'Saving...' : 'Save Pathway' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GPA Modal -->
+  <div class="modal-overlay" *ngIf="showGPAModal" (click)="closeGPAModal()">
+    <div class="modal-content gpa-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Your GPA Report</h2>
+        <button class="close-btn" (click)="closeGPAModal()">×</button>
+      </div>
+
+      <div class="modal-body" *ngIf="studentGPA">
+        <div class="gpa-summary">
+          <div class="overall-gpa">
+            <h3>Overall GPA</h3>
+            <p class="gpa-value">{{ studentGPA.overallGPA | number: '1.2-2' }}</p>
+            <p class="gpa-scale">out of 5.0</p>
+          </div>
+        </div>
+
+        <div class="subject-gpas">
+          <h4>Subject Performance</h4>
+          <div class="subject-gpa-list">
+            <div class="subject-gpa-item" *ngFor="let subjectGPA of studentGPA.subjectGPAs">
+              <div class="subject-info">
+                <strong>{{ subjectGPA.subjectName }}</strong>
+                <p>Average Score: {{ subjectGPA.avgScore | number: '1.0-1' }}/100</p>
+              </div>
+              <div class="subject-gpa-value">
+                <strong>{{ subjectGPA.gpa | number: '1.2-2' }}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeGPAModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pathway Recommendations Modal -->
+  <div class="modal-overlay" *ngIf="showRecommendationsModal" (click)="closeRecommendationsModal()">
+    <div class="modal-content recommendations-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Pathway Recommendations</h2>
+        <button class="close-btn" (click)="closeRecommendationsModal()">×</button>
+      </div>
+
+      <div class="modal-body" *ngIf="recommendationsLoading">
+        <p class="loading">Loading recommendations...</p>
+      </div>
+
+      <div class="modal-body" *ngIf="!recommendationsLoading && pathwayRecommendations">
+        <div class="recommendations-summary">
+          <p><strong>Your GPA:</strong> {{ pathwayRecommendations.studentGPA | number: '1.2-2' }} / 5.0</p>
+          <p><strong>Recommended Pathways:</strong> {{ pathwayRecommendations.recommendedPathways.length }}</p>
+        </div>
+
+        <div class="recommended-pathways">
+          <h4>Best Pathways for You</h4>
+          <div class="pathway-recommendation" *ngFor="let pathway of pathwayRecommendations.recommendedPathways">
+            <h5>{{ pathway.name }}</h5>
+            <p>{{ pathway.description }}</p>
+            <p><strong>Code:</strong> {{ pathway.code }}</p>
+            <p><strong>GPA Range:</strong> {{ pathway.gpaRange?.minimumGPA ?? 'N/A' }} - {{ pathway.gpaRange?.maximumGPA ?? 'N/A' }}</p>
+            <button class="btn-select" (click)="selectPathway(pathway)">Select This Pathway</button>
+          </div>
+        </div>
+
+        <div class="subject-grouped-recommendations" *ngIf="pathwayRecommendations.groupedBySubjectPerformance">
+          <h4>Pathways Grouped by Subject Performance</h4>
+          <div *ngFor="let group of getGroupedPathways(pathwayRecommendations.groupedBySubjectPerformance)">
+            <h5>{{ group.name }}</h5>
+            <div class="grouped-pathway-list">
+              <div class="grouped-pathway" *ngFor="let pathway of group.pathways">
+                <p><strong>Match Score:</strong> {{ pathway.studentMatchScore | number: '1.2-2' }}</p>
+                <p><strong>Matched Subjects:</strong> {{ pathway.matchedSubjectsCount }} / {{ pathway.totalRequiredSubjects }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeRecommendationsModal()">Close</button>
+        <button class="btn-primary" (click)="autoPlaceStudentInPathway()" [disabled]="autoPlacingStudent">
+          {{ autoPlacingStudent ? 'Processing...' : 'Auto-place Me' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

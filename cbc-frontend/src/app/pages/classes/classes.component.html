@@ -1,0 +1,282 @@
+<div>
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-2xl font-bold" [class]="darkMode ? 'text-white' : 'text-gray-800'">Classes</h2>
+    @if (hasPermission('CREATE_CLASS')) {
+      <button (click)="openModal()" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+        + Add Class
+      </button>
+    }
+  </div>
+
+  @if (success) {
+    <div class="mb-4 p-3 rounded-lg bg-green-100 text-green-800 text-sm">{{ success }}</div>
+  }
+  @if (error) {
+    <div class="mb-4 p-3 rounded-lg bg-red-100 text-red-800 text-sm">{{ error }}</div>
+  }
+
+  <!-- Table -->
+  <div class="rounded-xl overflow-hidden" [class]="darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-gray-200 shadow-sm'">
+    @if (loading) {
+      <div class="p-8 text-center" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">Loading...</div>
+    } @else if (classes.length === 0) {
+      <div class="p-8 text-center" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">No classes found. Create one to get started.</div>
+    } @else {
+      <table class="w-full">
+        <thead>
+          <tr [class]="darkMode ? 'bg-slate-700/50 text-slate-300' : 'bg-gray-50 text-gray-600'">
+            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">Name</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">Section</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">Academic Year</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">Teacher</th>
+            <th class="text-right px-4 py-3 text-xs font-semibold uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (cls of classes; track cls._id) {
+            <tr class="border-t transition-colors" [class]="darkMode ? 'border-slate-700 hover:bg-slate-700/30' : 'border-gray-100 hover:bg-gray-50'">
+              <td class="px-4 py-3 text-sm font-medium" [class]="darkMode ? 'text-white' : 'text-gray-900'">{{ cls.name }}</td>
+              <td class="px-4 py-3 text-sm" [class]="darkMode ? 'text-slate-300' : 'text-gray-600'">{{ cls.section || '-' }}</td>
+              <td class="px-4 py-3 text-sm" [class]="darkMode ? 'text-slate-300' : 'text-gray-600'">{{ cls.academicYear }}</td>
+              <td class="px-4 py-3 text-sm" [class]="darkMode ? 'text-slate-300' : 'text-gray-600'">{{ cls.teacher?.username || '-' }}</td>
+              <td class="px-4 py-3 text-right">
+                <app-action-buttons
+                  [actions]="getClassActions()"
+                  [darkMode]="darkMode"
+                  (actionClick)="onClassAction($event, cls)">
+                </app-action-buttons>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+
+  <!-- Modal -->
+  @if (showModal) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+      <div class="w-full max-w-md rounded-xl p-6" [class]="darkMode ? 'bg-slate-800' : 'bg-white'">
+        <h3 class="text-lg font-semibold mb-4" [class]="darkMode ? 'text-white' : 'text-gray-800'">
+          {{ editingId ? 'Edit Class' : 'Add Class' }}
+        </h3>
+
+        @if (error) {
+          <div class="mb-3 p-2 rounded bg-red-100 text-red-700 text-sm">{{ error }}</div>
+        }
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium mb-1" [class]="darkMode ? 'text-slate-300' : 'text-gray-700'">Class Name</label>
+            <input [(ngModel)]="form.name" placeholder="e.g., Form 1"
+              class="w-full px-3 py-2 rounded-lg border text-sm outline-none transition-colors"
+              [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-400 focus:border-blue-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-500'"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" [class]="darkMode ? 'text-slate-300' : 'text-gray-700'">Section (optional)</label>
+            <input [(ngModel)]="form.section" placeholder="e.g., A, B, East"
+              class="w-full px-3 py-2 rounded-lg border text-sm outline-none transition-colors"
+              [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-400 focus:border-blue-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-500'"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" [class]="darkMode ? 'text-slate-300' : 'text-gray-700'">Academic Year</label>
+            <input [(ngModel)]="form.academicYear" placeholder="e.g., 2026"
+              class="w-full px-3 py-2 rounded-lg border text-sm outline-none transition-colors"
+              [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-400 focus:border-blue-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-500'"
+            />
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-3 mt-6">
+          <button (click)="closeModal()" class="px-4 py-2 text-sm font-medium rounded-lg transition-colors"
+            [class]="darkMode ? 'text-slate-300 hover:bg-slate-700' : 'text-gray-600 hover:bg-gray-100'">
+            Cancel
+          </button>
+          <button (click)="save()" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+            {{ editingId ? 'Update' : 'Create' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <app-confirm-dialog [visible]="showConfirm" [darkMode]="darkMode" [title]="confirmTitle" [message]="confirmMessage" [type]="confirmType"
+    (confirmed)="confirmAction && confirmAction()" (cancelled)="showConfirm = false"></app-confirm-dialog>
+
+  <!-- Subject Assignment Modal -->
+  @if (showSubjectModal && selectedClass) {
+    <div class="fixed inset-0 z-50 flex items-start justify-center p-2 sm:p-4 bg-black/50 overflow-y-auto">
+      <div class="w-full max-w-6xl rounded-xl p-4 sm:p-6 mt-2 sm:mt-8 mb-4" [class]="darkMode ? 'bg-slate-800' : 'bg-white'">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-semibold" [class]="darkMode ? 'text-white' : 'text-gray-800'">
+            Manage Student Subjects - {{ selectedClass.name }}
+          </h3>
+          <button (click)="closeSubjectModal()" class="text-2xl leading-none" [class]="darkMode ? 'text-slate-400 hover:text-white' : 'text-gray-500 hover:text-gray-700'">
+            ×
+          </button>
+        </div>
+
+        @if (assignmentError) {
+          <div class="mb-3 p-2 rounded bg-red-100 text-red-700 text-sm">{{ assignmentError }}</div>
+        }
+        @if (assignmentSuccess) {
+          <div class="mb-3 p-2 rounded bg-green-100 text-green-700 text-sm">{{ assignmentSuccess }}</div>
+        }
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <!-- Subjects Selection Panel (Left) -->
+          <div class="md:col-span-1">
+            <h4 class="font-semibold text-sm mb-3" [class]="darkMode ? 'text-slate-300' : 'text-gray-700'">Select Subjects</h4>
+
+            <div class="mb-3">
+              <input
+                [(ngModel)]="subjectSearchText"
+                (input)="searchSubjects()"
+                placeholder="Search subjects..."
+                class="w-full px-3 py-2 rounded-lg border text-sm outline-none transition-colors"
+                [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-400 focus:border-blue-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-500'"
+              />
+            </div>
+
+            <div class="space-y-2 max-h-48 md:max-h-96 overflow-y-auto">
+              @if (filteredSubjects.length === 0) {
+                <div class="p-3 text-center text-sm" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">
+                  No subjects found
+                </div>
+              } @else {
+                @for (subject of filteredSubjects; track subject._id) {
+                  <label class="flex items-center p-2 rounded cursor-pointer transition-colors"
+                    [class]="isSubjectSelected(subject._id)
+                      ? (darkMode ? 'bg-purple-900/50 text-purple-100' : 'bg-purple-50 text-purple-900')
+                      : (darkMode ? 'bg-slate-700/50 text-slate-300 hover:bg-slate-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200')"
+                  >
+                    <input
+                      type="checkbox"
+                      [checked]="isSubjectSelected(subject._id)"
+                      (change)="toggleSubjectSelection(subject)"
+                      class="w-4 h-4 rounded shrink-0"
+                    />
+                    <span class="ml-2 text-sm font-medium truncate">{{ subject.name }}</span>
+                    <span class="ml-auto text-xs shrink-0" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">
+                      {{ subject.code }}
+                    </span>
+                  </label>
+                }
+              }
+            </div>
+          </div>
+
+          <!-- Students Selection & Enrollments Panel (Right 3 cols) -->
+          <div class="md:col-span-3">
+            @if (selectedSubjectIds.length === 0) {
+              <div class="flex items-center justify-center min-h-48 sm:min-h-96 rounded-lg border-2 border-dashed"
+                [class]="darkMode ? 'border-slate-600 bg-slate-700/30' : 'border-gray-300 bg-gray-50'">
+                <div class="text-center p-4" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">
+                  <p class="text-sm font-medium">Select subjects to manage student enrollments</p>
+                  <p class="text-xs mt-1">Choose subjects from the left panel</p>
+                </div>
+              </div>
+            } @else {
+              <div class="space-y-4">
+                <!-- Current Enrollments for each selected subject -->
+                @for (subject of selectedSubjects; track subject._id) {
+                  <div class="rounded-lg border" [class]="darkMode ? 'border-slate-600 bg-slate-700/30 p-3' : 'border-gray-200 bg-gray-50 p-3'">
+                    <h5 class="font-semibold text-sm mb-2 flex items-center gap-2" [class]="darkMode ? 'text-slate-300' : 'text-gray-700'">
+                      <span class="px-2 py-1 rounded text-xs font-medium truncate" [class]="darkMode ? 'bg-purple-900/50 text-purple-200' : 'bg-purple-100 text-purple-900'">
+                        {{ subject.name }}
+                      </span>
+                      <span class="text-xs shrink-0" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">
+                        Enrolled: {{ (subjectEnrollments.get(subject._id) || []).length }}
+                      </span>
+                    </h5>
+                    @if ((subjectEnrollments.get(subject._id) || []).length > 0) {
+                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto text-sm">
+                        @for (enrollment of subjectEnrollments.get(subject._id); track enrollment._id) {
+                          <div class="flex items-center justify-between gap-2 p-2 rounded" [class]="darkMode ? 'bg-slate-700/50' : 'bg-white'">
+                            <span class="truncate" [class]="darkMode ? 'text-slate-200' : 'text-gray-800'">
+                              {{ enrollment.studentId?.firstName }} {{ enrollment.studentId?.lastName }}
+                            </span>
+                            <button
+                              (click)="removeStudentFromSubject(enrollment, subject._id)"
+                              class="px-2 py-1 text-xs rounded bg-red-500 hover:bg-red-600 text-white transition-colors shrink-0"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        }
+                      </div>
+                    } @else {
+                      <div class="text-xs text-center py-2" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">
+                        No students enrolled yet
+                      </div>
+                    }
+                  </div>
+                }
+
+                <!-- Students to Assign -->
+                <div class="rounded-lg border" [class]="darkMode ? 'border-slate-600 bg-slate-700/30 p-3' : 'border-gray-200 bg-gray-50 p-3'">
+                  <h5 class="font-semibold text-sm mb-2" [class]="darkMode ? 'text-slate-300' : 'text-gray-700'">
+                    Class Students ({{ classStudents.length }})
+                  </h5>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                    @if (classStudents.length === 0) {
+                      <div class="p-3 text-center text-sm col-span-full" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">
+                        No students in this class
+                      </div>
+                    } @else {
+                      @for (student of classStudents; track student._id) {
+                        <label class="flex items-center p-2 rounded cursor-pointer transition-colors"
+                          [class]="isStudentSelected(student._id)
+                            ? (darkMode ? 'bg-blue-900/50 text-blue-100' : 'bg-blue-50 text-blue-900')
+                            : (darkMode ? 'bg-slate-700/50 text-slate-300 hover:bg-slate-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200')"
+                        >
+                          <input
+                            type="checkbox"
+                            [checked]="isStudentSelected(student._id)"
+                            (change)="toggleStudent(student._id)"
+                            class="w-4 h-4 rounded shrink-0"
+                          />
+                          <span class="ml-2 text-sm font-medium truncate">{{ student.firstName }} {{ student.lastName }}</span>
+                          <span class="ml-auto text-xs shrink-0" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">
+                            {{ student.admissionNumber }}
+                          </span>
+                        </label>
+                      }
+                    }
+                  </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex flex-col sm:flex-row justify-between gap-2 pt-4 border-t" [class]="darkMode ? 'border-slate-600' : 'border-gray-200'">
+                  <div class="text-sm space-y-1" [class]="darkMode ? 'text-slate-400' : 'text-gray-600'">
+                    <div>Subjects Selected: {{ selectedSubjectIds.length }}</div>
+                    <div>Students Selected: {{ selectedStudentIds.length }}</div>
+                  </div>
+                  <button
+                    (click)="assignStudentsToSubjects()"
+                    [disabled]="assigningSubjects || selectedStudentIds.length === 0"
+                    class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 w-full sm:w-auto"
+                  >
+                    {{ assigningSubjects ? 'Assigning...' : `Assign ${selectedStudentIds.length} Student(s) to ${selectedSubjectIds.length} Subject(s)` }}
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex justify-end gap-3 mt-6 pt-4 border-t" [class]="darkMode ? 'border-slate-700' : 'border-gray-200'">
+          <button
+            (click)="closeSubjectModal()"
+            class="px-4 py-2 text-sm font-medium rounded-lg transition-colors"
+            [class]="darkMode ? 'text-slate-300 hover:bg-slate-700' : 'text-gray-600 hover:bg-gray-100'"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  }

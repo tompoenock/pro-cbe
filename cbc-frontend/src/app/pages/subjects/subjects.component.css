@@ -1,0 +1,32 @@
+:host {
+	display: block;
+}
+
+.subjects-page {
+	position: relative;
+}
+
+.seed-float-btn {
+	position: fixed;
+	top: 88px;
+	right: 28px;
+	z-index: 60;
+	padding: 10px 16px;
+	border: 0;
+	border-radius: 9999px;
+	background: #059669;
+	color: #fff;
+	font-size: 14px;
+	font-weight: 700;
+	box-shadow: 0 12px 30px rgba(5, 150, 105, 0.35);
+	cursor: pointer;
+}
+
+.seed-float-btn:hover {
+	background: #047857;
+}
+
+.seed-float-btn:focus-visible {
+	outline: 3px solid rgba(5, 150, 105, 0.35);
+	outline-offset: 2px;
+}

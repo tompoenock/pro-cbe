@@ -1,0 +1,167 @@
+<div>
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-2xl font-bold" [class]="darkMode ? 'text-white' : 'text-gray-800'">User Management</h2>
+    <button *ngIf="hasPermission(Permission.CREATE_USER)" (click)="openCreateModal()" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+      + Add User
+    </button>
+  </div>
+
+  <div *ngIf="success" class="mb-4 p-3 rounded-lg bg-green-100 text-green-800 text-sm">{{ success }}</div>
+  <div *ngIf="error" class="mb-4 p-3 rounded-lg bg-red-100 text-red-800 text-sm">{{ error }}</div>
+
+  <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 mb-6">
+    <div class="rounded-xl p-4 border" [class]="darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200 shadow-sm'">
+      <p class="text-xs uppercase tracking-wider" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">Total Users</p>
+      <p class="mt-2 text-2xl font-semibold" [class]="darkMode ? 'text-white' : 'text-gray-900'">{{ totalUsersCount }}</p>
+    </div>
+    <div class="rounded-xl p-4 border" [class]="darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200 shadow-sm'">
+      <p class="text-xs uppercase tracking-wider" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">Approved</p>
+      <p class="mt-2 text-2xl font-semibold" [class]="darkMode ? 'text-white' : 'text-gray-900'">{{ approvedUsersCount }}</p>
+    </div>
+    <div class="rounded-xl p-4 border" [class]="darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200 shadow-sm'">
+      <p class="text-xs uppercase tracking-wider" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">Pending</p>
+      <p class="mt-2 text-2xl font-semibold" [class]="darkMode ? 'text-white' : 'text-gray-900'">{{ pendingUsersCount }}</p>
+    </div>
+    <div class="rounded-xl p-4 border" [class]="darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200 shadow-sm'">
+      <p class="text-xs uppercase tracking-wider" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">Admin / Super Admin</p>
+      <p class="mt-2 text-2xl font-semibold" [class]="darkMode ? 'text-white' : 'text-gray-900'">{{ adminUsersCount }}</p>
+    </div>
+  </div>
+
+  <div class="mb-6 flex flex-wrap items-center gap-3">
+    <input [(ngModel)]="searchTerm" placeholder="Search users..." class="px-3 py-2 rounded-lg border text-sm outline-none w-72" [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-400' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'" />
+    <select [(ngModel)]="filterRole" class="px-3 py-2 rounded-lg border text-sm outline-none" [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300 text-gray-900'">
+      <option value="">All Roles</option>
+      <option *ngFor="let role of roleOptions" [value]="role.value">{{ role.label }}</option>
+    </select>
+    <select [(ngModel)]="filterStatus" class="px-3 py-2 rounded-lg border text-sm outline-none" [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300 text-gray-900'">
+      <option value="">All Status</option>
+      <option value="approved">Approved</option>
+      <option value="pending">Pending</option>
+      <option value="rejected">Rejected</option>
+    </select>
+  </div>
+
+  <div class="rounded-xl overflow-hidden" [class]="darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-gray-200 shadow-sm'">
+    <div *ngIf="loading" class="p-8 text-center" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">Loading...</div>
+    <div *ngIf="!loading && filteredUsers.length === 0" class="p-8 text-center" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">No users found.</div>
+    <table *ngIf="!loading && filteredUsers.length > 0" class="w-full">
+      <thead>
+        <tr [class]="darkMode ? 'bg-slate-700/50 text-slate-300' : 'bg-gray-50 text-gray-600'">
+          <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">User</th>
+          <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">Role</th>
+          <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">Status</th>
+          <th class="text-right px-4 py-3 text-xs font-semibold uppercase tracking-wider">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let user of filteredUsers; trackBy: trackByUserId" class="border-t transition-colors" [class]="darkMode ? 'border-slate-700 hover:bg-slate-700/30' : 'border-gray-100 hover:bg-gray-50'">
+          <td class="px-4 py-4">
+            <div class="font-medium" [class]="darkMode ? 'text-white' : 'text-gray-900'">{{ user.username || user.email }}</div>
+            <div class="text-xs" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">{{ user.email }}</div>
+          </td>
+          <td class="px-4 py-4 text-sm" [class]="darkMode ? 'text-slate-300' : 'text-gray-600'">{{ user.role }}</td>
+          <td class="px-4 py-4">
+            <span [class]="getStatusBadgeClasses(user) + ' px-2 py-1 rounded text-xs'">{{ getUserStatus(user) }}</span>
+          </td>
+          <td class="px-4 py-4 text-right">
+            <app-action-buttons [actions]="getUserActions(user)" [darkMode]="darkMode" (actionClick)="onUserAction($event, user)"></app-action-buttons>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <app-confirm-dialog [visible]="showConfirm" [darkMode]="darkMode" [title]="confirmTitle" [message]="confirmMessage" [type]="confirmType" (confirmed)="confirmAction && confirmAction()" (cancelled)="showConfirm = false"></app-confirm-dialog>
+
+  <app-view-modal [visible]="viewDetails" [title]="'User Details'" [darkMode]="darkMode" [fields]="viewFields" (close)="closeView()"></app-view-modal>
+
+  <app-permissions-modal
+    *ngIf="showPermissionsModal"
+    [isOpen]="showPermissionsModal"
+    [userId]="permissionUser?._id"
+    [userName]="permissionUser?.username || permissionUser?.email"
+    [userRole]="permissionUser?.role"
+    [darkMode]="darkMode"
+    (closed)="showPermissionsModal = false"
+    (saved)="handlePermissionsSaved()"
+  ></app-permissions-modal>
+
+  <div *ngIf="showResetPasswordModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+    <div class="w-full max-w-md rounded-xl p-6" [class]="darkMode ? 'bg-slate-800' : 'bg-white'">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold" [class]="darkMode ? 'text-white' : 'text-gray-900'">Reset Password</h3>
+        <button (click)="showResetPasswordModal = false" class="p-2 rounded-lg" [class]="darkMode ? 'text-slate-400 hover:bg-slate-700' : 'text-gray-500 hover:bg-gray-100'">&times;</button>
+      </div>
+
+      <p class="text-sm mb-4" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">
+        Resetting password for <strong [class]="darkMode ? 'text-white' : 'text-gray-900'">{{ resetPasswordUser?.username || resetPasswordUser?.email }}</strong>
+      </p>
+
+      <div *ngIf="resetPasswordError" class="mb-4 p-3 rounded-lg bg-red-100 text-red-800 text-sm">{{ resetPasswordError }}</div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium mb-1" [class]="darkMode ? 'text-slate-300' : 'text-gray-700'">New Password</label>
+          <input [(ngModel)]="resetPasswordForm.newPassword" type="password" class="w-full px-3 py-2 rounded-lg border text-sm outline-none" [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300 text-gray-900'" placeholder="Enter new password" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" [class]="darkMode ? 'text-slate-300' : 'text-gray-700'">Confirm Password</label>
+          <input [(ngModel)]="resetPasswordForm.confirmPassword" type="password" class="w-full px-3 py-2 rounded-lg border text-sm outline-none" [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300 text-gray-900'" placeholder="Confirm new password" />
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-3 mt-6">
+        <button (click)="showResetPasswordModal = false" class="px-4 py-2 rounded-lg text-sm" [class]="darkMode ? 'text-slate-300 hover:bg-slate-700' : 'text-gray-600 hover:bg-gray-100'">Cancel</button>
+        <button (click)="submitResetPassword()" class="px-4 py-2 bg-amber-600 text-white text-sm rounded-lg hover:bg-amber-700">Reset Password</button>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+    <div class="w-full max-w-2xl rounded-xl p-6" [class]="darkMode ? 'bg-slate-800' : 'bg-white'">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold" [class]="darkMode ? 'text-white' : 'text-gray-900'">{{ editingUser ? 'Edit User' : 'Create User' }}</h3>
+        <button (click)="showModal = false" class="p-2 rounded-lg" [class]="darkMode ? 'text-slate-400 hover:bg-slate-700' : 'text-gray-500 hover:bg-gray-100'">×</button>
+      </div>
+
+      <div *ngIf="error" class="mb-4 p-3 rounded-lg bg-red-100 text-red-800 text-sm">{{ error }}</div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1" [class]="darkMode ? 'text-slate-300' : 'text-gray-700'">Username</label>
+          <input [(ngModel)]="form.username" class="w-full px-3 py-2 rounded-lg border text-sm outline-none" [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300 text-gray-900'" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" [class]="darkMode ? 'text-slate-300' : 'text-gray-700'">Email</label>
+          <input [(ngModel)]="form.email" class="w-full px-3 py-2 rounded-lg border text-sm outline-none" [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300 text-gray-900'" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" [class]="darkMode ? 'text-slate-300' : 'text-gray-700'">Phone</label>
+          <input [(ngModel)]="form.phone_no" class="w-full px-3 py-2 rounded-lg border text-sm outline-none" [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300 text-gray-900'" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" [class]="darkMode ? 'text-slate-300' : 'text-gray-700'">Role</label>
+          <select [(ngModel)]="form.role" class="w-full px-3 py-2 rounded-lg border text-sm outline-none" [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300 text-gray-900'">
+            <option *ngFor="let role of roleOptions" [value]="role.value">{{ role.label }}</option>
+          </select>
+        </div>
+        <div *ngIf="!editingUser">
+          <label class="block text-sm font-medium mb-1" [class]="darkMode ? 'text-slate-300' : 'text-gray-700'">Password</label>
+          <input [(ngModel)]="form.password" type="password" class="w-full px-3 py-2 rounded-lg border text-sm outline-none" [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300 text-gray-900'" />
+        </div>
+        <div>
+          <label class="inline-flex items-center gap-2 mt-6">
+            <input type="checkbox" [(ngModel)]="form.isApproved" class="rounded border-gray-300 text-blue-600" />
+            <span class="text-sm" [class]="darkMode ? 'text-slate-300' : 'text-gray-700'">Approved</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-3 mt-6">
+        <button (click)="showModal = false" class="px-4 py-2 rounded-lg" [class]="darkMode ? 'text-slate-300 hover:bg-slate-700' : 'text-gray-600 hover:bg-gray-100'">Cancel</button>
+        <button (click)="saveUser()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">{{ editingUser ? 'Update' : 'Create' }}</button>
+      </div>
+    </div>
+  </div>
+</div>

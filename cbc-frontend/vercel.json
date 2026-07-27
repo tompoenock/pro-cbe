@@ -1,0 +1,11 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/frontend/browser",
+  "framework": "angular",
+  "installCommand": "npm install",
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "https://sms-api.vercel.app/api/$1" },
+    { "source": "/auth/(.*)", "destination": "https://sms-api.vercel.app/auth/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

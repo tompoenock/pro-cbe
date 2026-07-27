@@ -1,0 +1,145 @@
+<div>
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-2xl font-bold" [class]="darkMode ? 'text-white' : 'text-gray-800'">Staff Records</h2>
+    @if (hasPermission('CREATE_STAFF')) {
+      <button (click)="openModal()" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">+ Add Staff</button>
+    }
+  </div>
+
+  @if (success) { <div class="mb-4 p-3 rounded-lg bg-green-100 text-green-800 text-sm">{{ success }}</div> }
+  @if (error) { <div class="mb-4 p-3 rounded-lg bg-red-100 text-red-800 text-sm">{{ error }}</div> }
+
+  <div class="mb-4 flex flex-wrap items-center gap-3">
+    <input [(ngModel)]="searchTerm" (ngModelChange)="loadStaff()" placeholder="Search staff..."
+      class="px-3 py-2 rounded-lg border text-sm outline-none w-64"
+      [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-400' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'" />
+    <select [(ngModel)]="filterType" (ngModelChange)="loadStaff()"
+      class="px-3 py-2 rounded-lg border text-sm outline-none"
+      [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300 text-gray-900'">
+      <option value="">All Types</option>
+      @for (t of staffTypes; track t) { <option [value]="t">{{ t }}</option> }
+    </select>
+  </div>
+
+  <div class="rounded-xl overflow-hidden" [class]="darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-gray-200 shadow-sm'">
+    @if (loading) {
+      <div class="p-8 text-center" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">Loading...</div>
+    } @else if (staffList.length === 0) {
+      <div class="p-8 text-center" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">No staff found.</div>
+    } @else {
+      <table class="w-full">
+        <thead>
+          <tr [class]="darkMode ? 'bg-slate-700/50 text-slate-300' : 'bg-gray-50 text-gray-600'">
+            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">Name</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">Staff No.</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">Type</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">Department</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">Phone</th>
+            <th class="text-right px-4 py-3 text-xs font-semibold uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (staff of staffList; track staff._id) {
+            <tr class="border-t transition-colors" [class]="darkMode ? 'border-slate-700 hover:bg-slate-700/30' : 'border-gray-100 hover:bg-gray-50'">
+              <td class="px-4 py-3 text-sm font-medium" [class]="darkMode ? 'text-white' : 'text-gray-900'">{{ staff.firstName }} {{ staff.lastName }}</td>
+              <td class="px-4 py-3 text-sm" [class]="darkMode ? 'text-slate-300' : 'text-gray-600'">
+                <span class="px-2 py-0.5 rounded text-xs font-mono" [class]="darkMode ? 'bg-slate-700 text-slate-300' : 'bg-gray-100 text-gray-700'">{{ staff.staffNumber }}</span>
+              </td>
+              <td class="px-4 py-3 text-sm capitalize" [class]="darkMode ? 'text-slate-300' : 'text-gray-600'">{{ staff.staffType }}</td>
+              <td class="px-4 py-3 text-sm" [class]="darkMode ? 'text-slate-300' : 'text-gray-600'">{{ staff.department || '-' }}</td>
+              <td class="px-4 py-3 text-sm" [class]="darkMode ? 'text-slate-300' : 'text-gray-600'">{{ staff.phone || '-' }}</td>
+              <td class="px-4 py-3 text-right">
+                <app-action-buttons
+                  [actions]="getStaffActions()"
+                  [darkMode]="darkMode"
+                  (actionClick)="onStaffAction($event, staff)">
+                </app-action-buttons>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+
+  <!-- Add/Edit Modal -->
+  @if (showModal) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+      <div class="w-full max-w-lg rounded-xl p-6 max-h-[90vh] overflow-y-auto" [class]="darkMode ? 'bg-slate-800' : 'bg-white'">
+        <h3 class="text-lg font-semibold mb-4" [class]="darkMode ? 'text-white' : 'text-gray-800'">{{ editingId ? 'Edit Staff' : 'Add Staff' }}</h3>
+        @if (error) { <div class="mb-3 p-2 rounded bg-red-100 text-red-700 text-sm">{{ error }}</div> }
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-1" [class]="darkMode ? 'text-slate-300' : 'text-gray-700'">First Name</label>
+            <input [(ngModel)]="form.firstName" class="w-full px-3 py-2 rounded-lg border text-sm outline-none"
+              [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300 text-gray-900'" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" [class]="darkMode ? 'text-slate-300' : 'text-gray-700'">Last Name</label>
+            <input [(ngModel)]="form.lastName" class="w-full px-3 py-2 rounded-lg border text-sm outline-none"
+              [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300 text-gray-900'" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" [class]="darkMode ? 'text-slate-300' : 'text-gray-700'">Staff Number</label>
+            <input [(ngModel)]="form.staffNumber" class="w-full px-3 py-2 rounded-lg border text-sm outline-none"
+              [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300 text-gray-900'" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" [class]="darkMode ? 'text-slate-300' : 'text-gray-700'">Type</label>
+            <select [(ngModel)]="form.staffType" class="w-full px-3 py-2 rounded-lg border text-sm outline-none"
+              [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300 text-gray-900'">
+              @for (t of staffTypes; track t) { <option [value]="t">{{ t }}</option> }
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" [class]="darkMode ? 'text-slate-300' : 'text-gray-700'">Email</label>
+            <input [(ngModel)]="form.email" type="email" class="w-full px-3 py-2 rounded-lg border text-sm outline-none"
+              [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300 text-gray-900'" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" [class]="darkMode ? 'text-slate-300' : 'text-gray-700'">Phone</label>
+            <input [(ngModel)]="form.phone" class="w-full px-3 py-2 rounded-lg border text-sm outline-none"
+              [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300 text-gray-900'" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" [class]="darkMode ? 'text-slate-300' : 'text-gray-700'">Department</label>
+            <input [(ngModel)]="form.department" class="w-full px-3 py-2 rounded-lg border text-sm outline-none"
+              [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300 text-gray-900'" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" [class]="darkMode ? 'text-slate-300' : 'text-gray-700'">Designation</label>
+            <input [(ngModel)]="form.designation" class="w-full px-3 py-2 rounded-lg border text-sm outline-none"
+              [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300 text-gray-900'" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" [class]="darkMode ? 'text-slate-300' : 'text-gray-700'">Qualification</label>
+            <input [(ngModel)]="form.qualification" class="w-full px-3 py-2 rounded-lg border text-sm outline-none"
+              [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300 text-gray-900'" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" [class]="darkMode ? 'text-slate-300' : 'text-gray-700'">Gender</label>
+            <select [(ngModel)]="form.gender" class="w-full px-3 py-2 rounded-lg border text-sm outline-none"
+              [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300 text-gray-900'">
+              <option value="">Select</option>
+              @for (g of genders; track g) { <option [value]="g">{{ g }}</option> }
+            </select>
+          </div>
+          <div class="col-span-2">
+            <label class="block text-sm font-medium mb-1" [class]="darkMode ? 'text-slate-300' : 'text-gray-700'">Date of Joining</label>
+            <input [(ngModel)]="form.dateOfJoining" type="date" class="w-full px-3 py-2 rounded-lg border text-sm outline-none"
+              [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300 text-gray-900'" />
+          </div>
+        </div>
+        <div class="flex justify-end gap-3 mt-6">
+          <button (click)="closeModal()" class="px-4 py-2 text-sm font-medium rounded-lg"
+            [class]="darkMode ? 'text-slate-300 hover:bg-slate-700' : 'text-gray-600 hover:bg-gray-100'">Cancel</button>
+          <button (click)="save()" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">{{ editingId ? 'Update' : 'Create' }}</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <app-view-modal [visible]="showView" [darkMode]="darkMode" title="Staff Details" [fields]="viewFields" (close)="showView = false"></app-view-modal>
+  <app-confirm-dialog [visible]="showConfirm" [darkMode]="darkMode" [title]="confirmTitle" [message]="confirmMessage" [type]="confirmType"
+    (confirmed)="confirmAction && confirmAction()" (cancelled)="showConfirm = false"></app-confirm-dialog>
+</div>

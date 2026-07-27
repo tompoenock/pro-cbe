@@ -1,0 +1,187 @@
+<div>
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h2 class="text-2xl font-bold" [class]="darkMode ? 'text-white' : 'text-gray-800'">Grading Scales</h2>
+      <p class="text-sm mt-1" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">Configure how scores are mapped to grades</p>
+    </div>
+    @if (hasPermission('CREATE_GRADE')) {
+      <button (click)="openModal()" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+        + Add Scale
+      </button>
+    }
+  </div>
+
+  @if (success) {
+    <div class="mb-4 p-3 rounded-lg bg-green-100 text-green-800 text-sm">{{ success }}</div>
+  }
+
+  <!-- Active Default Template Section -->
+  @if (defaultTemplate && !loading) {
+    <div class="mb-6 rounded-xl overflow-hidden" [class]="darkMode ? 'bg-linear-to-r from-blue-900/40 to-purple-900/40 border border-blue-700' : 'bg-linear-to-r from-blue-50 to-indigo-50 border border-blue-300 shadow-md'">
+      <div class="px-6 py-4 flex items-center justify-between">
+        <div>
+          <h3 class="text-lg font-bold flex items-center gap-2" [class]="darkMode ? 'text-blue-300' : 'text-blue-900'">
+            ⭐ Active Grading Template
+          </h3>
+          <p class="text-sm mt-1" [class]="darkMode ? 'text-blue-200' : 'text-blue-800'">{{ defaultTemplate.name }} (Currently in use)</p>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead>
+            <tr [class]="darkMode ? 'bg-blue-900/30 text-blue-300' : 'bg-blue-100 text-blue-900'">
+              <th class="text-left px-6 py-2 text-xs font-semibold uppercase">Grade</th>
+              <th class="text-left px-6 py-2 text-xs font-semibold uppercase">Min Score</th>
+              <th class="text-left px-6 py-2 text-xs font-semibold uppercase">Max Score</th>
+              <th class="text-left px-6 py-2 text-xs font-semibold uppercase">Points</th>
+              <th class="text-left px-6 py-2 text-xs font-semibold uppercase">Remark</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (g of defaultTemplate.grades; track g.grade) {
+              <tr [class]="darkMode ? 'border-blue-800 hover:bg-blue-800/20' : 'border-blue-200 hover:bg-blue-50'">
+                <td class="px-6 py-3 text-sm font-bold" [class]="darkMode ? 'text-blue-300' : 'text-blue-900'">{{ g.grade }}</td>
+                <td class="px-6 py-3 text-sm" [class]="darkMode ? 'text-slate-300' : 'text-gray-700'">{{ g.minScore }}</td>
+                <td class="px-6 py-3 text-sm" [class]="darkMode ? 'text-slate-300' : 'text-gray-700'">{{ g.maxScore }}</td>
+                <td class="px-6 py-3 text-sm" [class]="darkMode ? 'text-slate-300' : 'text-gray-700'">{{ g.points }}</td>
+                <td class="px-6 py-3 text-sm" [class]="darkMode ? 'text-slate-300' : 'text-gray-700'">{{ g.remark }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  @if (loading) {
+    <div class="p-8 text-center" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">Loading...</div>
+  } @else if (scales.length === 0) {
+    <div class="p-8 text-center rounded-xl" [class]="darkMode ? 'bg-slate-800 border border-slate-700 text-slate-400' : 'bg-white border border-gray-200 text-gray-500'">
+      No grading scales configured yet. Create one to get started.
+    </div>
+  } @else {
+    <div class="grid gap-4">
+      @for (scale of scales; track scale._id) {
+        <div class="rounded-xl overflow-hidden" [class]="darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-gray-200 shadow-sm'">
+          <div class="px-5 py-4 flex items-center justify-between" [class]="darkMode ? 'border-b border-slate-700' : 'border-b border-gray-100'">
+            <div class="flex items-center gap-3">
+              <h3 class="text-lg font-semibold" [class]="darkMode ? 'text-white' : 'text-gray-800'">{{ scale.name }}</h3>
+              @if (scale.isDefault) {
+                <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">Default</span>
+              }
+            </div>
+            <div class="flex gap-2">
+              <app-action-buttons
+                [actions]="getScaleActions()"
+                [darkMode]="darkMode"
+                (actionClick)="onScaleAction($event, scale)">
+              </app-action-buttons>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead>
+                <tr [class]="darkMode ? 'bg-slate-700/30 text-slate-400' : 'bg-gray-50 text-gray-500'">
+                  <th class="text-left px-4 py-2 text-xs font-semibold uppercase">Grade</th>
+                  <th class="text-left px-4 py-2 text-xs font-semibold uppercase">Min</th>
+                  <th class="text-left px-4 py-2 text-xs font-semibold uppercase">Max</th>
+                  <th class="text-left px-4 py-2 text-xs font-semibold uppercase">Points</th>
+                  <th class="text-left px-4 py-2 text-xs font-semibold uppercase">Remark</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (g of scale.grades; track g.grade) {
+                  <tr class="border-t" [class]="darkMode ? 'border-slate-700' : 'border-gray-100'">
+                    <td class="px-4 py-2 text-sm font-bold" [class]="darkMode ? 'text-white' : 'text-gray-900'">{{ g.grade }}</td>
+                    <td class="px-4 py-2 text-sm" [class]="darkMode ? 'text-slate-300' : 'text-gray-600'">{{ g.minScore }}</td>
+                    <td class="px-4 py-2 text-sm" [class]="darkMode ? 'text-slate-300' : 'text-gray-600'">{{ g.maxScore }}</td>
+                    <td class="px-4 py-2 text-sm" [class]="darkMode ? 'text-slate-300' : 'text-gray-600'">{{ g.points }}</td>
+                    <td class="px-4 py-2 text-sm" [class]="darkMode ? 'text-slate-300' : 'text-gray-600'">{{ g.remark }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Modal -->
+  @if (showModal) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+      <div class="w-full max-w-2xl rounded-xl p-6 max-h-[90vh] overflow-y-auto" [class]="darkMode ? 'bg-slate-800' : 'bg-white'">
+        <h3 class="text-lg font-semibold mb-4" [class]="darkMode ? 'text-white' : 'text-gray-800'">
+          {{ editingId ? 'Edit Grading Scale' : 'Create Grading Scale' }}
+        </h3>
+        @if (error) {
+          <div class="mb-3 p-2 rounded bg-red-100 text-red-700 text-sm">{{ error }}</div>
+        }
+        <div class="space-y-4">
+          <div class="flex gap-4 items-end">
+            <div class="flex-1">
+              <label class="block text-sm font-medium mb-1" [class]="darkMode ? 'text-slate-300' : 'text-gray-700'">Scale Name</label>
+              <input [(ngModel)]="form.name" placeholder="e.g., KCSE Grading"
+                class="w-full px-3 py-2 rounded-lg border text-sm outline-none"
+                [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300 text-gray-900'" />
+            </div>
+            <label class="flex items-center gap-2 pb-2 cursor-pointer">
+              <input type="checkbox" [(ngModel)]="form.isDefault" class="w-4 h-4 rounded" />
+              <span class="text-sm" [class]="darkMode ? 'text-slate-300' : 'text-gray-700'">Set as default</span>
+            </label>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <label class="text-sm font-medium" [class]="darkMode ? 'text-slate-300' : 'text-gray-700'">Grade Entries</label>
+              <button (click)="addGrade()" class="text-sm text-blue-500 hover:text-blue-400">+ Add Row</button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead>
+                  <tr [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">
+                    <th class="text-left px-2 py-1 text-xs">Grade</th>
+                    <th class="text-left px-2 py-1 text-xs">Min</th>
+                    <th class="text-left px-2 py-1 text-xs">Max</th>
+                    <th class="text-left px-2 py-1 text-xs">Points</th>
+                    <th class="text-left px-2 py-1 text-xs">Remark</th>
+                    <th class="px-2 py-1 text-xs"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (g of form.grades; track $index; let i = $index) {
+                    <tr>
+                      <td class="px-1 py-1"><input [(ngModel)]="g.grade" class="w-14 px-2 py-1 rounded border text-sm outline-none"
+                        [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300'" /></td>
+                      <td class="px-1 py-1"><input [(ngModel)]="g.minScore" type="number" class="w-16 px-2 py-1 rounded border text-sm outline-none"
+                        [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300'" /></td>
+                      <td class="px-1 py-1"><input [(ngModel)]="g.maxScore" type="number" class="w-16 px-2 py-1 rounded border text-sm outline-none"
+                        [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300'" /></td>
+                      <td class="px-1 py-1"><input [(ngModel)]="g.points" type="number" class="w-16 px-2 py-1 rounded border text-sm outline-none"
+                        [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300'" /></td>
+                      <td class="px-1 py-1"><input [(ngModel)]="g.remark" class="w-28 px-2 py-1 rounded border text-sm outline-none"
+                        [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300'" /></td>
+                      <td class="px-1 py-1">
+                        <button (click)="removeGrade(i)" class="text-red-400 hover:text-red-300 text-sm">✕</button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="flex justify-end gap-3 mt-6">
+          <button (click)="closeModal()" class="px-4 py-2 text-sm font-medium rounded-lg"
+            [class]="darkMode ? 'text-slate-300 hover:bg-slate-700' : 'text-gray-600 hover:bg-gray-100'">Cancel</button>
+          <button (click)="save()" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
+            {{ editingId ? 'Update' : 'Create' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <app-confirm-dialog [visible]="showConfirm" [darkMode]="darkMode" [title]="confirmTitle" [message]="confirmMessage" [type]="confirmType"
+    (confirmed)="confirmAction && confirmAction()" (cancelled)="showConfirm = false"></app-confirm-dialog>
+</div>

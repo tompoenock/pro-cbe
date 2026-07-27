@@ -1,0 +1,376 @@
+<div class="reports-container">
+  <div *ngIf="loading" class="page-spinner">
+    <div class="spinner"></div>
+  </div>
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <h1>Reports</h1>
+        <p>View and download student and school reports</p>
+      </div>
+      <button 
+        *ngIf="isTeacher || isAdmin || isParent" 
+        (click)="openGenerateModal()" 
+        class="btn-add"
+        [disabled]="isParent && !canGenerateReport">
+        + Generate Report
+      </button>
+    </div>
+  </div>
+
+  <!-- Success Message -->
+  <div *ngIf="success" class="alert alert-success">
+    {{ success }}
+  </div>
+
+  <!-- Error Message -->
+  <div *ngIf="error" class="alert alert-error">
+    {{ error }}
+  </div>
+
+  <!-- Report Type Selector -->
+  <div class="report-controls">
+    <div class="control-group">
+      <label>Report Type:</label>
+      <select [(ngModel)]="selectedReportType" (change)="onReportTypeChange()">
+        <option value="student">Student Reports</option>
+        <option value="school" *ngIf="isAdmin || isTeacher">School Reports</option>
+      </select>
+    </div>
+    <!-- Parent filters: select child and report type -->
+    <div *ngIf="isParent" class="control-group">
+      <label>Child:</label>
+      <select [(ngModel)]="selectedChildId">
+        <option value="all">All children</option>
+        <option *ngFor="let c of children" [value]="c._id">{{ c.firstName }} {{ c.lastName }}</option>
+      </select>
+    </div>
+    <div *ngIf="isParent" class="control-group">
+      <label>Report Type:</label>
+      <select [(ngModel)]="selectedReportTypeFilter">
+        <option value="all">All types</option>
+        <option value="pathway">Pathway</option>
+        <option value="performance">Performance</option>
+        <option value="comprehensive">Comprehensive</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-state">
+    <p>Loading reports...</p>
+  </div>
+
+  <!-- Student Reports -->
+  <div *ngIf="!loading && selectedReportType === 'student'" class="student-reports-section">
+    <div class="section-header">
+      <h2>Student Reports</h2>
+    </div>
+
+    <div class="reports-list" *ngIf="filteredStudentReports().length > 0; else noReports">
+      <div class="report-card" *ngFor="let report of filteredStudentReports()">
+        <div class="report-header">
+            <h3>{{ report.studentId?.firstName }} {{ report.studentId?.lastName }}</h3>
+          <span class="report-type-badge" [class]="'type-' + report.reportType">{{ report.reportType }}</span>
+        </div>
+        
+        <div class="report-details">
+          <p><strong>Generated:</strong> {{ report.generatedDate | date: 'short' }}</p>
+          <p *ngIf="report.reportPeriod">
+            <strong>Period:</strong> {{ report.reportPeriod.startDate | date: 'short' }} - {{ report.reportPeriod.endDate | date: 'short' }}
+          </p>
+          <p *ngIf="report.reportSummary" class="report-summary-snippet">
+            {{ report.reportSummary }}
+          </p>
+          
+          <div *ngIf="report.performanceSummary" class="performance-summary">
+            <h4>Performance Summary</h4>
+            <p><strong>GPA:</strong> {{ report.performanceSummary.overallGPA | number: '1.2-2' }}</p>
+          </div>
+
+          <div *ngIf="report.pathwayRecommendation" class="pathway-summary">
+            <h4>Pathway Recommendation</h4>
+          </div>
+        </div>
+
+        <div class="report-actions">
+          <button class="btn-view" (click)="viewReport(report)">View Details</button>
+          <button class="btn-download" (click)="downloadReport(report)">Download</button>
+          <button class="btn-delete" (click)="deleteReport(report._id)" *ngIf="isAdmin || isParent">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #noReports>
+      <p class="no-data">No student reports available. Create one to get started.</p>
+    </ng-template>
+  </div>
+
+  <!-- School Reports -->
+  <div *ngIf="!loading && selectedReportType === 'school' && (isAdmin || isTeacher)" class="school-reports-section">
+    <div class="section-header">
+      <h2>School Reports</h2>
+    </div>
+
+    <div class="reports-list" *ngIf="schoolReports.length > 0; else noSchoolReports">
+      <div class="report-card" *ngFor="let report of schoolReports">
+        <div class="report-header">
+          <h3>School Report</h3>
+          <span class="report-date">{{ report.generatedDate | date: 'short' }}</span>
+        </div>
+        
+        <div class="report-details">
+          <p><strong>Period:</strong> {{ report.reportPeriod.startDate | date: 'short' }} - {{ report.reportPeriod.endDate | date: 'short' }}</p>
+          <p><strong>Total Students:</strong> {{ report.totalStudents }}</p>
+          
+          <div *ngIf="report.pathwayDistribution" class="pathway-distribution">
+            <h4>Pathway Distribution</h4>
+            <ul>
+              <li *ngFor="let key of getDistributionKeys(report.pathwayDistribution)">
+                {{ key }}: {{ report.pathwayDistribution[key] }} students
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="report-actions">
+          <button class="btn-view" (click)="viewSchoolReport(report)">View Details</button>
+          <button class="btn-download" (click)="downloadSchoolReport(report)">Download</button>
+          <button class="btn-delete" (click)="deleteReport(report._id)" *ngIf="isAdmin">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #noSchoolReports>
+      <p class="no-data">No school reports available.</p>
+    </ng-template>
+  </div>
+
+  <!-- Analytics -->
+  <div class="analytics-section" *ngIf="isAdmin">
+    <h2>Report Analytics</h2>
+    <div class="analytics-cards">
+      <div class="analytics-card">
+        <h4>Total Reports</h4>
+        <p class="number">{{ reportAnalytics?.totalReports || 0 }}</p>
+      </div>
+      <div class="analytics-card">
+        <h4>This Month</h4>
+        <p class="number">{{ reportAnalytics?.reportsThisMonth || 0 }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Generate Report Modal -->
+  <div class="modal-overlay" *ngIf="showGenerateModal" (click)="closeGenerateModal()">
+    <div class="modal-content modal-wide" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Generate New Report</h2>
+        <button class="modal-close" (click)="closeGenerateModal()">×</button>
+      </div>
+
+      <div class="modal-body">
+        <div *ngIf="error" class="alert alert-error">
+          {{ error }}
+        </div>
+
+        <div class="form-group" *ngIf="!isParent">
+          <label>Class *</label>
+          <select [(ngModel)]="generateReportForm.classId" class="form-control">
+            <option value="">-- Select class --</option>
+            <option *ngFor="let c of classes" [value]="c._id">{{ c.name || c.className || c.displayName }}</option>
+          </select>
+        </div>
+
+        <div class="form-group" *ngIf="isParent">
+          <label>Child</label>
+          <input class="form-control" [value]="selectedChildName" disabled />
+        </div>
+
+        <div class="form-group">
+          <label>Report Type</label>
+          <select [(ngModel)]="generateReportForm.reportType" class="form-control">
+            <option value="pathway">Pathway</option>
+            <option value="performance">Performance</option>
+            <option value="comprehensive">Comprehensive</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Start Date (optional)</label>
+          <input 
+            [(ngModel)]="generateReportForm.startDate" 
+            type="date"
+            class="form-control"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>End Date (optional)</label>
+          <input 
+            [(ngModel)]="generateReportForm.endDate" 
+            type="date"
+            class="form-control"
+          />
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeGenerateModal()" [disabled]="isSubmitting">
+          Cancel
+        </button>
+        <button class="btn-primary" (click)="generateReport()" [disabled]="isSubmitting">
+          {{ isSubmitting ? 'Generating...' : 'Generate Report' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Report Details Modal -->
+  <div class="modal-overlay" *ngIf="showViewModal" (click)="closeViewModal()">
+    <div class="modal-content modal-wide" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Report Details</h2>
+        <button class="modal-close" (click)="closeViewModal()">×</button>
+      </div>
+
+      <div class="modal-body">
+        <div *ngIf="viewLoading" class="loading-state">
+          <p>Loading report details...</p>
+        </div>
+
+        <div *ngIf="!viewLoading && selectedReport">
+          <div *ngIf="selectedReport.studentId" class="report-detail-row">
+            <strong>Student:</strong>
+            <span>{{ selectedReport.studentId?.firstName }} {{ selectedReport.studentId?.lastName }}</span>
+          </div>
+
+          <div *ngIf="!selectedReport.studentId" class="report-detail-row">
+            <strong>Report Type:</strong>
+            <span>{{ selectedReport.reportType || 'School' }}</span>
+          </div>
+
+          <div *ngIf="selectedReport.reportSummary" class="report-summary-block">
+            <strong>Summary:</strong>
+            <p>{{ selectedReport.reportSummary }}</p>
+          </div>
+
+          <!-- Detailed class summary (generated by class-summary generator) -->
+          <div *ngIf="selectedReport.performanceStatistics" class="class-summary-block">
+            <h3>Class Summary</h3>
+            <div class="report-detail-row" *ngIf="selectedReport.class">
+              <strong>Class:</strong>
+              <span>{{ selectedReport.class.name }} {{ selectedReport.class.section ? (' - ' + selectedReport.class.section) : '' }}</span>
+            </div>
+            <div class="report-detail-row">
+              <strong>Total Students:</strong>
+              <span>{{ selectedReport.totalStudents || selectedReport.performanceStatistics.totalClassStudents || 'N/A' }}</span>
+            </div>
+            <div class="report-detail-row" *ngIf="selectedReportPathwayDistribution || selectedReportPerformanceData?.length">
+              <strong>Pathway Distribution</strong>
+              <ul>
+                <li *ngFor="let p of (selectedReportPathwayDistribution ? getDistributionKeys(selectedReportPathwayDistribution) : selectedReportPathwayNames)">
+                  <ng-container *ngIf="selectedReportPathwayDistribution">{{ p }}: {{ selectedReportPathwayDistribution[p] }} students</ng-container>
+                  <ng-container *ngIf="!selectedReportPathwayDistribution">{{ p }}</ng-container>
+                </li>
+              </ul>
+            </div>
+
+            <div *ngFor="let pathwayEntry of (sortedPathwayEntries || []); let i = index" class="pathway-entry">
+              <h4>
+                <span class="pathway-number">{{ i + 1 }}</span>
+                {{ pathwayEntry.pathway?.name }}
+                <small>({{ pathwayEntry.students?.length || 0 }} students)</small>
+              </h4>
+              <div class="pathway-stats">
+                <p><strong>Average Score:</strong> {{ pathwayEntry.statistics?.averageScore || 'N/A' }}</p>
+                <p><strong>Completion Rate:</strong> {{ pathwayEntry.statistics?.averageCompletionRate || 'N/A' }}%</p>
+              </div>
+              <div class="pathway-table-wrap">
+                <table class="table" *ngIf="pathwayEntry.students?.length; else noStudents">
+                  <thead>
+                    <tr>
+                      <th>Student</th>
+                      <th>Admission</th>
+                      <th>GPA</th>
+                      <th>Avg Score</th>
+                      <th>Highest</th>
+                      <th>Lowest</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let s of getStudentsFromEntry(pathwayEntry) | slice:0:10">
+                      <td>{{ s?.studentName }}</td>
+                      <td>{{ s?.admissionNumber }}</td>
+                      <td>{{ s?.studentGPA ?? (s?.averageScore ? (s.averageScore/20) : 'N/A') | number:'1.2-2' }}</td>
+                      <td>{{ s?.averageScore }}</td>
+                      <td>{{ s?.highestScore }}</td>
+                      <td>{{ s?.lowestScore }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <ng-template #noStudents>
+                  <div class="no-students">No students in this pathway.</div>
+                </ng-template>
+              </div>
+              </div>
+            </div>
+          </div>
+        <div class="report-detail-row">
+          <strong>Generated:</strong>
+          <span>{{ selectedReport.generatedDate | date:'medium' }}</span>
+        </div>
+        <div class="report-detail-row" *ngIf="selectedReport.reportPeriod">
+          <strong>Period:</strong>
+          <span>{{ selectedReport.reportPeriod.startDate | date:'mediumDate' }} - {{ selectedReport.reportPeriod.endDate | date:'mediumDate' }}</span>
+        </div>
+
+        <div *ngIf="selectedReport.performanceSummary" class="detail-block">
+          <h3>Performance Summary</h3>
+          <p><strong>Overall GPA:</strong> {{ selectedReport.performanceSummary.overallGPA | number:'1.2-2' }}</p>
+          <p><strong>Overall Score:</strong> {{ selectedReport.performanceSummary.overallScore | number:'1.2-2' }}</p>
+          <div class="score-graph" *ngIf="selectedReport.performanceSummary.subjectScores?.length">
+            <h4>Subject Performance</h4>
+            <div class="score-bar" *ngFor="let subject of selectedReport.performanceSummary.subjectScores">
+              <div class="label">{{ subject.subjectName }} ({{ subject.averageScore }})</div>
+              <div class="bar-track">
+                <div class="bar-fill" [style.width]="getScoreBarWidth(subject.averageScore)"></div>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="selectedReport.performanceSummary.trends?.length" class="detail-block">
+            <h4>Term Trends</h4>
+            <ul>
+              <li *ngFor="let trend of selectedReport.performanceSummary.trends">
+                {{ trend.term }}: {{ trend.averageScore | number:'1.2-2' }}
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div *ngIf="selectedReport.pathwayRecommendation" class="detail-block">
+          <h3>Pathway Recommendation</h3>
+          <p><strong>Recommended Pathway:</strong> {{ selectedReport.pathwayRecommendation.recommendedPathway?.name || 'N/A' }}</p>
+          <p><strong>GPA:</strong> {{ selectedReport.pathwayRecommendation.studentGPA | number:'1.2-2' }}</p>
+          <div *ngIf="selectedReport.pathwayRecommendation.matchingSubjects?.length">
+            <strong>Matched Subjects:</strong>
+            <ul>
+              <li *ngFor="let subject of selectedReport.pathwayRecommendation.matchingSubjects">
+                {{ subject.name || subject.subjectName || 'Unnamed Subject' }}
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div *ngIf="selectedReport.teacherNotes" class="detail-block">
+          <h3>Teacher Notes</h3>
+          <p>{{ selectedReport.teacherNotes }}</p>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeViewModal()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

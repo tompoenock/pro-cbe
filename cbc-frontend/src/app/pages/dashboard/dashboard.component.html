@@ -1,0 +1,149 @@
+<div>
+  <h2 class="text-2xl font-bold mb-6" [class]="darkMode ? 'text-white' : 'text-gray-800'">Dashboard</h2>
+  <!-- Parent-specific dashboard -->
+  <div *ngIf="user?.role === 'parent'">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div class="rounded-xl p-5" [class]="darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-gray-200 shadow-sm'">
+        <p class="text-sm font-medium" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">Your Children</p>
+        <p class="text-3xl font-bold mt-1" [class]="darkMode ? 'text-white' : 'text-gray-900'">{{ parentChildrenCount }}</p>
+        <a routerLink="/app/parent-portal" class="text-sm text-blue-500 hover:text-blue-400 mt-3 inline-block">Open Parent Portal &rarr;</a>
+      </div>
+
+      <div class="rounded-xl p-5" [class]="darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-gray-200 shadow-sm'">
+        <p class="text-sm font-medium" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">Recent Reports</p>
+        <p class="text-3xl font-bold mt-1" [class]="darkMode ? 'text-white' : 'text-gray-900'">{{ totalRecentReports }}</p>
+      </div>
+
+      <div class="rounded-xl p-5" [class]="darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-gray-200 shadow-sm'">
+        <p class="text-sm font-medium" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">Latest GPA (sample)</p>
+        <p class="text-3xl font-bold mt-1" [class]="darkMode ? 'text-white' : 'text-gray-900'">{{ latestSampleGPA }}</p>
+      </div>
+
+      <div class="rounded-xl p-5" [class]="darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-gray-200 shadow-sm'">
+        <p class="text-sm font-medium" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">Quick Actions</p>
+        <div class="mt-2 space-y-2">
+          <a routerLink="/app/parent-portal" class="text-sm text-blue-500 hover:text-blue-400 inline-block">View Child Dashboard</a>
+          <a routerLink="/app/reports" class="text-sm text-green-500 hover:text-green-400 inline-block">View Reports</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="rounded-xl p-5 mb-6" [class]="darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-gray-200 shadow-sm'">
+      <h3 class="text-lg font-semibold mb-3" [class]="darkMode ? 'text-white' : 'text-gray-800'">Your Children</h3>
+      <ul class="space-y-3">
+        <li *ngFor="let c of childrenSummaries" class="flex items-center justify-between">
+          <div>
+            <div class="font-medium" [class]="darkMode ? 'text-white' : 'text-gray-800'">{{ c.name }}</div>
+            <div class="text-xs" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">Class: {{ c.className }}</div>
+            <div class="text-xs" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">Reports: {{ c.recentReports }} · GPA: {{ c.latestGPA != null ? c.latestGPA : 'N/A' }}</div>
+          </div>
+          <div>
+            <a [routerLink]="['/app/parent-portal']" [queryParams]="{ studentId: c.id }" class="text-sm text-blue-500">Open</a>
+          </div>
+        </li>
+        <li *ngIf="childrenSummaries.length === 0" class="text-sm text-gray-400">No children linked to your account.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Regular dashboard for non-parent users -->
+  <div *ngIf="user?.role !== 'parent'">
+
+  <!-- Stats cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div class="rounded-xl p-5 transition-colors" [class]="darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-gray-200 shadow-sm'">
+      <div>
+        <p class="text-sm font-medium" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">Total Classes</p>
+        <p class="text-3xl font-bold mt-1" [class]="darkMode ? 'text-white' : 'text-gray-900'">{{ stats.classes }}</p>
+      </div>
+      <a routerLink="/app/classes" class="text-sm text-blue-500 hover:text-blue-400 mt-3 inline-block">View all &rarr;</a>
+    </div>
+
+    <div class="rounded-xl p-5 transition-colors" [class]="darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-gray-200 shadow-sm'">
+      <div>
+        <p class="text-sm font-medium" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">Total Students</p>
+        <p class="text-3xl font-bold mt-1" [class]="darkMode ? 'text-white' : 'text-gray-900'">{{ stats.students }}</p>
+      </div>
+      <a routerLink="/app/students" class="text-sm text-green-500 hover:text-green-400 mt-3 inline-block">View all &rarr;</a>
+    </div>
+
+    <div class="rounded-xl p-5 transition-colors" [class]="darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-gray-200 shadow-sm'">
+      <div>
+        <p class="text-sm font-medium" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">Total Subjects</p>
+        <p class="text-3xl font-bold mt-1" [class]="darkMode ? 'text-white' : 'text-gray-900'">{{ stats.subjects }}</p>
+      </div>
+      <a routerLink="/app/subjects" class="text-sm text-purple-500 hover:text-purple-400 mt-3 inline-block">View all &rarr;</a>
+    </div>
+
+    <div class="rounded-xl p-5 transition-colors" [class]="darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-gray-200 shadow-sm'">
+      <div>
+        <p class="text-sm font-medium" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">Total Staff</p>
+        <p class="text-3xl font-bold mt-1" [class]="darkMode ? 'text-white' : 'text-gray-900'">{{ stats.staff }}</p>
+      </div>
+      <a routerLink="/app/staff" class="text-sm text-amber-500 hover:text-amber-400 mt-3 inline-block">View all &rarr;</a>
+    </div>
+  </div>
+
+  <!-- Second row stats -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div *ngIf="isAdmin" class="rounded-xl p-5 transition-colors" [class]="darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-gray-200 shadow-sm'">
+      <div>
+        <p class="text-sm font-medium" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">Pending Approvals</p>
+        <p class="text-3xl font-bold mt-1" [class]="darkMode ? 'text-white' : 'text-gray-900'">{{ stats.pendingApprovals }}</p>
+      </div>
+      <a routerLink="/app/users" class="text-sm text-red-500 hover:text-red-400 mt-3 inline-block">Review &rarr;</a>
+    </div>
+
+    <div class="rounded-xl p-5 transition-colors" [class]="darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-gray-200 shadow-sm'">
+      <div>
+        <p class="text-sm font-medium" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">Your Role</p>
+        <p class="text-2xl font-bold mt-1 capitalize" [class]="darkMode ? 'text-white' : 'text-gray-900'">{{ user?.role }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detailed panels -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-6">
+    <!-- Recent Students -->
+    <div class="rounded-xl p-5 transition-colors" [class]="darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-gray-200 shadow-sm'">
+      <h3 class="text-lg font-semibold mb-3" [class]="darkMode ? 'text-white' : 'text-gray-800'">Recent Students</h3>
+      <ul class="space-y-3">
+        <li *ngFor="let s of recentStudents" class="flex items-center justify-between">
+          <div>
+            <div class="font-medium" [class]="darkMode ? 'text-white' : 'text-gray-800'">{{ s.firstName }} {{ s.lastName }}</div>
+            <div class="text-xs" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">Class: {{ s.classId?.name || s.classId || 'N/A' }}</div>
+          </div>
+          <div class="text-xs text-gray-400">{{ s.createdAt | date:'shortDate' }}</div>
+        </li>
+        <li *ngIf="recentStudents.length === 0" class="text-sm text-gray-400">No recent students</li>
+      </ul>
+    </div>
+
+    <!-- Top Classes -->
+    <div class="rounded-xl p-5 transition-colors" [class]="darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-gray-200 shadow-sm'">
+      <h3 class="text-lg font-semibold mb-3" [class]="darkMode ? 'text-white' : 'text-gray-800'">Top Classes</h3>
+      <div class="space-y-2">
+        <div *ngFor="let c of topClasses" class="flex items-center justify-between">
+          <div class="text-sm font-medium" [class]="darkMode ? 'text-white' : 'text-gray-800'">{{ c.name }}</div>
+          <div class="text-sm text-gray-500">{{ c.count }} students</div>
+        </div>
+        <div class="mt-3 text-sm text-gray-500">Average class size: <strong>{{ averageClassSize }}</strong></div>
+      </div>
+    </div>
+
+    <!-- Recent Approvals -->
+    <div class="rounded-xl p-5 transition-colors" [class]="darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-gray-200 shadow-sm'">
+      <h3 class="text-lg font-semibold mb-3" [class]="darkMode ? 'text-white' : 'text-gray-800'">Recent Approvals</h3>
+      <ul class="space-y-3">
+        <li *ngFor="let a of recentApprovals" class="flex items-center justify-between">
+          <div>
+            <div class="font-medium" [class]="darkMode ? 'text-white' : 'text-gray-800'">{{ a.title || a.type || 'Approval' }}</div>
+            <div class="text-xs" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">By: {{ a.requestedBy?.name || a.requestedBy || 'N/A' }}</div>
+          </div>
+          <div class="text-xs text-gray-400">{{ a.createdAt | date:'short' }}</div>
+        </li>
+        <li *ngIf="recentApprovals.length === 0" class="text-sm text-gray-400">No recent approvals</li>
+      </ul>
+    </div>
+  </div>
+</div>

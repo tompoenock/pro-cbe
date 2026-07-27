@@ -1,0 +1,31 @@
+{
+  "name": "CBE-pathway",
+  "version": "0.0.1",
+  "description": "CBE Pathway - Monorepo for backend and frontend",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "dev": "pnpm -r --parallel run start:dev",
+    "start": "pnpm -r run start",
+    "start:prod": "pnpm -r run start:prod",
+    "build": "pnpm -r run build",
+    "test": "pnpm -r run test",
+    "test:watch": "pnpm -r run test:watch",
+    "test:cov": "pnpm -r run test:cov",
+    "test:e2e": "pnpm -r run test:e2e",
+    "lint": "pnpm -r run lint",
+    "format": "pnpm -r run format",
+    "backend:dev": "pnpm -F backend run start:dev",
+    "backend:build": "pnpm -F backend run build",
+    "backend:test": "pnpm -F backend run test",
+    "frontend:start": "pnpm -F frontend run start",
+    "frontend:build": "pnpm -F frontend run build",
+    "frontend:test": "pnpm -F frontend run test"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@9.15.0"
+}
