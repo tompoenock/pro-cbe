@@ -156,7 +156,7 @@ export class AuthController {
     @Param('id') id: string,
     @Body() adminResetPasswordDto: AdminResetPasswordDto,
   ) {
-    adminResetPasswordDto.userId = id;
-    return this.authService.adminResetPassword(adminResetPasswordDto);
+    const dto = { ...adminResetPasswordDto, userId: id };
+    return this.authService.adminResetPassword(dto);
   }
 }

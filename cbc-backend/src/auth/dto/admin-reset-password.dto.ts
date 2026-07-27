@@ -1,9 +1,9 @@
-import { IsNotEmpty, IsString, MinLength, MaxLength, Matches } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, MinLength, MaxLength, Matches } from 'class-validator';
 
 export class AdminResetPasswordDto {
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  userId: string;
+  userId?: string;
 
   @IsNotEmpty()
   @IsString()
