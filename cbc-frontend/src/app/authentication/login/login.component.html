@@ -1,5 +1,28 @@
 
-<div [class]="darkMode ? 'min-h-screen bg-slate-950 text-white transition-colors duration-300' : 'min-h-screen bg-gray-50 text-gray-900 transition-colors duration-300'" class="relative">
+<div [class]="darkMode ? 'min-h-screen bg-slate-950 text-white transition-colors duration-300' : 'min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 text-gray-900 transition-colors duration-300'" class="relative overflow-hidden">
+
+  <!-- Decorative school-themed background elements -->
+  <div class="absolute inset-0 pointer-events-none overflow-hidden">
+    <!-- Graduation cap top-left -->
+    <div [class]="darkMode ? 'absolute -top-10 -left-10 text-slate-800/20' : 'absolute -top-10 -left-10 text-emerald-100/50'" class="transform -rotate-12">
+      <svg class="w-48 h-48" fill="currentColor" viewBox="0 0 640 512">
+        <path d="M320 32c-8.1 0-16.1 1.4-23.7 4.1L15.8 137.4C6.3 140.9 0 149.9 0 160s6.3 19.1 15.8 22.6l57.9 20.9C57.3 229.3 48 259.8 48 291.9c0 28.6 10.6 54.4 27.7 72.5c-8.7 12.4-14.1 27.8-14.1 44.8c0 45.5 41.6 70.8 82.9 70.8c33.5 0 62.8-17.7 77.1-41.1c10.1 5.1 21.2 8.1 33.1 8.1c47.4 0 90-28.5 107.1-69.4c5.5-13.1 8.6-27.4 8.6-42.6c0-11.1-1.5-21.9-4.2-32.1L623.3 182.6C633.7 179.1 640 170.1 640 160s-6.3-19.1-15.8-22.6L343.7 36.1C336.1 33.4 328.1 32 320 32zM128 384c0 17.7-14.3 32-32 32s-32-14.3-32-32c0-24.8 11.9-46.9 30.2-60.8c2.2 12.1 6.1 23.5 11.5 34.1c5.1 10.1 12.2 19.4 20.7 27.6c1.1 10.4 1.7 20.8 1.7 31.1zm288-32c0 30.1-13.3 57.2-34.5 76.1c-15.5 13.8-34.9 23.1-56.4 26.5c-1.5-6.8-3.5-13.4-6.1-19.7c6.5-3.7 12.6-8.1 18.1-13.1c16.7-15 29-35.5 35.1-58.8c2.5-9.4 3.9-19.2 3.9-29.3c0-5.5-.4-10.9-1.1-16.1c14.4-15.9 24-38 28-62.2c16.7-5.5 31.5-14.8 43.7-26.9c1.3 14.6 2.3 29.4 2.3 44.5c0 10.9-.8 21.6-2.3 32z"/>
+      </svg>
+    </div>
+    <!-- Books bottom-right -->
+    <div [class]="darkMode ? 'absolute bottom-10 right-10 text-slate-800/20' : 'absolute bottom-10 right-10 text-emerald-100/50'" class="transform rotate-12">
+      <svg class="w-40 h-40" fill="currentColor" viewBox="0 0 448 512">
+        <path d="M96 0C43 0 0 43 0 96V416c0 53 43 96 96 96H384h32c17.7 0 32-14.3 32-32s-14.3-32-32-32V384c17.7 0 32-14.3 32-32V32c0-17.7-14.3-32-32-32H384 96zm0 384H352v64H96c-17.7 0-32-14.3-32-32s14.3-32 32-32zm32-240c0-8.8 7.2-16 16-16H336c8.8 0 16 7.2 16 16s-7.2 16-16 16H144c-8.8 0-16-7.2-16-16zm16 48H336c8.8 0 16 7.2 16 16s-7.2 16-16 16H144c-8.8 0-16-7.2-16-16s7.2-16 16-16z"/>
+      </svg>
+    </div>
+    <!-- Pencil top-right -->
+    <div [class]="darkMode ? 'absolute top-20 right-20 text-slate-800/20' : 'absolute top-20 right-20 text-emerald-100/50'" class="transform rotate-45">
+      <svg class="w-32 h-32" fill="currentColor" viewBox="0 0 512 512">
+        <path d="M410.3 231l11.3-11.3-33.9-33.9-62.1-62.1L291.7 89.8l-11.3 11.3-22.6 22.6L58.6 322.9c-10.4 10.4-18 23.3-22.2 37.4L1 480.7c-2.5 8.4-.2 17.5 6.1 23.7s15.3 8.5 23.7 6.1l120.3-35.4c14.1-4.2 27-11.8 37.4-22.2L387.7 253.7 410.3 231zM160 399.4l-9.1 22.7c-4 3.1-8.5 5.4-13.3 6.9L59.4 452l23-78.1c1.4-4.9 3.8-9.4 6.9-13.3l22.7-9.1v32c0 8.8 7.2 16 16 16h32zM362.7 18.7L348.3 33.2 325.7 55.8 314.3 67.1l33.9 33.9 62.1 62.1 33.9 33.9 11.3-11.3 22.6-22.6 14.5-14.5c25-25 25-65.5 0-90.5L453.3 18.7c-25-25-65.5-25-90.5 0zm-47.4 168l-144 144c-6.2 6.2-16.4 6.2-22.6 0s-6.2-16.4 0-22.6l144-144c6.2-6.2 16.4-6.2 22.6 0s6.2 16.4 0 22.6z"/>
+      </svg>
+    </div>
+  </div>
+
   <!-- Dark/Light Mode Switcher (Dashboard style, top right) -->
   <div class="absolute top-6 right-8 z-50">
     <button type="button" (click)="toggleTheme()" [class]="darkMode ? 'p-2 rounded-lg transition-colors hover:bg-slate-700 text-yellow-400' : 'p-2 rounded-lg transition-colors hover:bg-gray-100 text-gray-500'" [attr.aria-label]="darkMode ? 'Switch to light mode' : 'Switch to dark mode'">
@@ -12,19 +35,22 @@
     </button>
   </div>
 
-  <div class="flex items-center justify-center min-h-screen px-4">
+  <div class="flex items-center justify-center min-h-screen px-4 py-8">
     <div class="w-full max-w-md">
-      <div [class]="darkMode ? 'bg-slate-800 text-slate-100 rounded-2xl shadow-2xl px-8 pt-10 pb-8 space-y-6 transition-colors duration-300 border border-slate-700' : 'bg-white text-gray-900 rounded-2xl shadow-lg px-8 pt-10 pb-8 space-y-6 transition-colors duration-300 border border-gray-200'">
+      <div [class]="darkMode ? 'bg-slate-800/90 backdrop-blur-sm text-slate-100 rounded-2xl shadow-2xl px-8 pt-10 pb-8 space-y-6 transition-colors duration-300 border border-slate-700' : 'bg-white/90 backdrop-blur-sm text-gray-900 rounded-2xl shadow-xl px-8 pt-10 pb-8 space-y-6 transition-colors duration-300 border border-gray-200'">
 
       <!-- Logo & Title -->
       <div class="flex flex-col items-center space-y-3">
-        <div [class]="darkMode ? 'w-16 h-16 rounded-full bg-slate-700 flex items-center justify-center' : 'w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center'">
-          <svg [class]="darkMode ? 'w-9 h-9 text-emerald-300' : 'w-9 h-9 text-emerald-600'" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round"
-              d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5" />
+        <div [class]="darkMode ? 'w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center shadow-lg' : 'w-20 h-20 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-md'">
+          <!-- Graduation cap icon for school theme -->
+          <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 640 512">
+            <path d="M320 32c-8.1 0-16.1 1.4-23.7 4.1L15.8 137.4C6.3 140.9 0 149.9 0 160s6.3 19.1 15.8 22.6L320 302.6 624.2 182.6c9.5-3.5 15.8-12.5 15.8-22.6s-6.3-19.1-15.8-22.6L343.7 36.1C336.1 33.4 328.1 32 320 32zM128 384c0 35.3 85.9 96 192 96s192-60.7 192-96l0-101.4-139.5 49.8c-16.6 5.9-34.1 9-52.5 9s-35.9-3.1-52.5-9L128 282.6V384z"/>
           </svg>
         </div>
-        <h2 [class]="darkMode ? 'text-white text-2xl font-bold tracking-wide italic' : 'text-emerald-600 text-2xl font-bold tracking-wide italic'">DISCOVER. TRACK.EXCEL.</h2>
+        <div class="text-center">
+          <h2 [class]="darkMode ? 'text-white text-2xl font-bold tracking-wide' : 'text-emerald-700 text-2xl font-bold tracking-wide'">CBE PATHWAY SYSTEM</h2>
+          <p [class]="darkMode ? 'text-slate-400 text-sm mt-1' : 'text-gray-500 text-sm mt-1'">Discover &bull; Track &bull; Excel</p>
+        </div>
       </div>
 
       <!-- Login Form -->
@@ -130,8 +156,10 @@
         </button>
 
         <!-- Links -->
-        <div class="flex justify-between items-center text-sm">
+        <div class="flex justify-center items-center text-sm">
+          <!-- Forgot Password commented out
           <a routerLink="/forgot-password" class="text-gray-500 hover:text-emerald-600 transition-colors">Forgot Password?</a>
+          -->
           <a routerLink="/register" class="text-emerald-600 font-semibold hover:text-emerald-700 transition-colors">Register</a>
         </div>
 
