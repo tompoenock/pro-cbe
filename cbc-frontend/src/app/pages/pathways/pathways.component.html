@@ -21,12 +21,7 @@
         [class.active]="viewMode === 'overview'">
         Overview
       </button>
-      <button 
-        (click)="switchViewMode('tracking')" 
-        class="tab-btn"
-        [class.active]="viewMode === 'tracking'">
-        Track Results
-      </button>
+      <!-- Track Results tab removed -->
       <button 
         (click)="switchViewMode('placement')" 
         class="tab-btn"
@@ -106,9 +101,9 @@
               <span class="student-tag" *ngFor="let student of getStudentsInPathwayByClass(pathway._id)">
                 {{ student.firstName }} {{ student.lastName }}
               </span>
-              <span class="no-students" *ngIf="getStudentsInPathwayByClass(pathway._id).length === 0">
+              <!-- <span class="no-students" *ngIf="getStudentsInPathwayByClass(pathway._id).length === 0">
                 No students assigned yet
-              </span>
+              </span> -->
             </div>
           </div>
         </div>
@@ -366,79 +361,7 @@
     </div>
   </div>
 
-  <!-- Results Tracking (Tracking Mode) -->
-  <div class="tracking-section" *ngIf="viewMode === 'tracking' && (isTeacher || isAdmin)">
-    <h2>Results Tracking</h2>
-
-    <div class="tracking-controls">
-      <div class="form-group">
-        <label>Academic Year</label>
-        <input [(ngModel)]="trackingFilters.academicYear" class="form-control" />
-      </div>
-
-      <div class="form-group">
-        <label>Term</label>
-        <select [(ngModel)]="trackingFilters.term" class="form-control">
-          <option *ngFor="let term of terms" [value]="term">{{ term }}</option>
-        </select>
-      </div>
-
-      <button class="btn-primary tracking-refresh" (click)="refreshPathwayTracking()">Refresh Tracking</button>
-      <button class="btn-secondary tracking-refresh" (click)="resetTrackingYearToCurrent()">
-        Reset to Current Year
-      </button>
-    </div>
-
-    <div class="tracking-card" *ngIf="trackingLoading">
-      <p class="no-data">Loading pathway results...</p>
-    </div>
-
-    <div class="tracking-card" *ngIf="!trackingLoading && pathwayTracking">
-      <div class="tracking-summary">
-        <div>
-          <h3>{{ pathwayTracking.pathway.name }}</h3>
-          <p>{{ pathwayTracking.pathway.code }}</p>
-        </div>
-
-        <div class="tracking-metrics">
-          <div>
-            <strong>{{ pathwayTracking.totalStudents }}</strong>
-            <span>Students</span>
-          </div>
-          <div>
-            <strong>{{ pathwayTracking.averageCompletionRate }}%</strong>
-            <span>Average Completion</span>
-          </div>
-          <div>
-            <strong>{{ pathwayTracking.averageScore }}</strong>
-            <span>Average Score</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="tracking-table" *ngIf="pathwayTracking.students.length > 0; else noTrackedStudents">
-        <div class="tracking-row tracking-row-head">
-          <span>Student</span>
-          <span>Adm No.</span>
-          <span>Completion</span>
-          <span>Average</span>
-        </div>
-
-        <div class="tracking-row" *ngFor="let student of pathwayTracking.students">
-          <span>{{ student.studentName }}</span>
-          <span>{{ student.admissionNumber }}</span>
-          <span>{{ student.completedRequiredSubjects }}/{{ student.requiredSubjects }}</span>
-          <span>
-            <span class="score-pill" [ngClass]="getTrackingAverageColor(student.averageScore)">{{ student.averageScore }}</span>
-          </span>
-        </div>
-      </div>
-
-      <ng-template #noTrackedStudents>
-        <p class="no-data">No tracked results yet for this pathway.</p>
-      </ng-template>
-    </div>
-  </div>
+<!-- Track Results section removed -->
 
   <!-- Create Pathway Modal -->
   <div class="modal-overlay" *ngIf="showCreateModal" (click)="closeCreateModal()">

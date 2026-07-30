@@ -9,6 +9,7 @@ import { GradingService } from '../../shared/services/grading.service';
 import { ThemeService } from '../../shared/services/theme.service';
 import { ActionButtonsComponent, ActionType } from '../../shared/components/action-buttons/action-buttons.component';
 import { DEFAULT_GRADES, GERMAN_FALLBACK_GRADES } from '../../shared/constants/grading.constants';
+import * as XLSX from 'xlsx';
 
 @Component({
   selector: 'app-performance',
@@ -438,6 +439,67 @@ export class PerformanceComponent implements OnInit {
         this.saving = false;
       },
     });
+  }
+
+  downloadExcelTemplate() {
+    if (!this.filters.subjectId || this.bulkScores.length === 0) {
+      this.error = 'Select a subject with students to download template';
+      return;
+    }
+
+    const subjectName = this.getSubjectName(this.filters.subjectId);
+    const data = this.bulkScores.map((entry, i) => ({
+      '#': i + 1,
+      'Admission No': entry.admNo,
+      'Student Name': entry.studentName,
+      [`${subjectName} Score`]: ''
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Marks');
+    ws['!cols'] = [{ wch: 5 }, { wch: 15 }, { wch: 25 }, { wch: 15 }];
+
+    XLSX.writeFile(wb, `${subjectName}_marks_template.xlsx`);
+  }
+
+  onFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files?.length) return;
+
+    const file = input.files[0];
+    const reader = new FileReader();
+    reader.onload = (e: any) => {
+      try {
+        const wb = XLSX.read(e.target.result, { type: 'binary' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows: any[] = XLSX.utils.sheet_to_json(ws);
+
+        let imported = 0;
+        for (const row of rows) {
+          const scoreCol = Object.keys(row).find(k => k.toLowerCase().includes('score'));
+          if (!scoreCol) continue;
+
+          const admNo = String(row['Admission No'] || row['Admission No.'] || '').trim();
+          const score = Number(row[scoreCol]);
+
+          if (admNo && !isNaN(score) && score >= 0 && score <= 100) {
+            const entry = this.bulkScores.find(e => e.admNo === admNo);
+            if (entry) {
+              entry.score = score;
+              imported++;
+            }
+          }
+        }
+
+        this.success = `Imported ${imported} scores from ${file.name}`;
+        setTimeout(() => (this.success = ''), 4000);
+      } catch (err) {
+        this.error = 'Failed to parse Excel file. Ensure it matches the template format.';
+      }
+    };
+    reader.readAsBinaryString(file);
+    input.value = '';
   }
 
   deletePerformance(id: string) {

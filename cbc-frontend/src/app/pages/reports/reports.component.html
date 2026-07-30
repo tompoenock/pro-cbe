@@ -328,11 +328,11 @@
         <div *ngIf="selectedReport.performanceSummary" class="detail-block">
           <h3>Performance Summary</h3>
           <p><strong>Overall GPA:</strong> {{ selectedReport.performanceSummary.overallGPA | number:'1.2-2' }}</p>
-          <p><strong>Overall Score:</strong> {{ selectedReport.performanceSummary.overallScore | number:'1.2-2' }}</p>
+          <p><strong>Overall Score:</strong> {{ selectedReport.performanceSummary.overallScore | number:'1.2-2' }}%</p>
           <div class="score-graph" *ngIf="selectedReport.performanceSummary.subjectScores?.length">
             <h4>Subject Performance</h4>
             <div class="score-bar" *ngFor="let subject of selectedReport.performanceSummary.subjectScores">
-              <div class="label">{{ subject.subjectName }} ({{ subject.averageScore }})</div>
+              <div class="label">{{ subject.subjectName }} ({{ subject.averageScore }}%)</div>
               <div class="bar-track">
                 <div class="bar-fill" [style.width]="getScoreBarWidth(subject.averageScore)"></div>
               </div>
@@ -342,7 +342,7 @@
             <h4>Term Trends</h4>
             <ul>
               <li *ngFor="let trend of selectedReport.performanceSummary.trends">
-                {{ trend.term }}: {{ trend.averageScore | number:'1.2-2' }}
+                {{ trend.term }}: {{ trend.averageScore | number:'1.2-2' }}%
               </li>
             </ul>
           </div>

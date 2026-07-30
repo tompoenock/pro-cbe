@@ -52,17 +52,14 @@
       <div class="performance-card" *ngFor="let subject of studentPerformance?.subjects">
         <h4>{{ subject.name }}</h4>
         <div class="score-display">
-          <span class="score">{{ subject.score || 'N/A' }}</span>
+          <span class="score">{{ subject.score || 'N/A' }}%</span>
           <span class="grade">{{ subject.grade || '-' }}</span>
         </div>
         <p class="exam-type">{{ subject.examType }}</p>
       </div>
     </div>
 
-    <div *ngIf="studentPerformance?.overallGPA" class="gpa-card">
-      <h4>Overall GPA</h4>
-      <p class="gpa-value">{{ studentPerformance.overallGPA | number: '1.2-2' }}</p>
-    </div>
+    <!-- Overall GPA section removed -->
 
     <div *ngIf="studentPerformance?.subjects?.length" class="stats-section">
       <h4>Performance Statistics</h4>
