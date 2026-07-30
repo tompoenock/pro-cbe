@@ -21,6 +21,7 @@
     "@angular/router": "^19.1.0",
     "jspdf": "^4.2.1",
     "rxjs": "~7.8.0",
+    "xlsx": "^0.18.5",
     "tslib": "^2.3.0",
     "zone.js": "~0.15.0"
   },
@@ -36,6 +37,7 @@
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
+    "@babel/core": "^7.26.0",
     "tailwindcss": "^4.2.1",
     "typescript": "~5.7.2"
   }
