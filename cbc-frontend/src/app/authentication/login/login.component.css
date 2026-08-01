@@ -2,3 +2,35 @@ html.dark, body.dark {
   background-color: var(--bg-primary);
   color: var(--text-primary);
 }
+
+/* Dotted grid overlay */
+.grid-pattern {
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.18) 1px, transparent 1px);
+  background-size: 26px 26px;
+}
+
+.grid-pattern-dark {
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 26px 26px;
+}
+
+/* Slow drifting blobs */
+@keyframes blob {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(24px, -28px) scale(1.08); }
+  66% { transform: translate(-18px, 16px) scale(0.94); }
+}
+
+.animate-blob {
+  animation: blob 16s ease-in-out infinite;
+}
+
+/* Gentle floating for the logo / hero icon */
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-float-slow {
+  animation: float-slow 6s ease-in-out infinite;
+}
