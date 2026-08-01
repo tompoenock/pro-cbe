@@ -13,6 +13,7 @@ import { StudentsComponent } from './pages/students/students.component';
 import { GradingComponent } from './pages/grading/grading.component';
 import { PerformanceComponent } from './pages/performance/performance.component';
 import { StaffComponent } from './pages/staff/staff.component';
+import { AccessLogComponent } from './pages/access-log/access-log.component';
 import { PathwaysComponent } from './pages/pathways/pathways.component';
 import { ReportsComponent } from './pages/reports/reports.component';
 import { ParentPortalComponent } from './pages/parent-portal/parent-portal.component';
@@ -38,6 +39,7 @@ export const routes: Routes = [
       { path: 'dashboard', component: DashboardComponent },
       { path: 'staff', component: StaffComponent },
       { path: 'users', component: UsersComponent, data: { roles: ['admin', 'super_admin'] } },
+      { path: 'logs', component: AccessLogComponent, data: { roles: ['admin', 'super_admin'] } },
       { path: 'classes', component: ClassesComponent },
       { path: 'subjects', component: SubjectsComponent },
       { path: 'students', component: StudentsComponent },

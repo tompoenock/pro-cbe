@@ -30,6 +30,7 @@ export class LayoutComponent implements OnInit {
     { path: '/app/dashboard', label: 'Dashboard', icon: 'home', superAdminOnly: false, roles: ['parent'], permissionKey: 'VIEW_DASHBOARD' },
     { path: '/app/staff', label: 'Staff', icon: 'badge', superAdminOnly: false, permissionKey: 'VIEW_STAFF' },
     { path: '/app/users', label: 'Users', icon: 'people', roles: ['admin', 'super_admin'], permissionKey: 'VIEW_USERS' },
+    { path: '/app/logs', label: 'Access Log', icon: 'history', roles: ['admin', 'super_admin'], permissionKey: 'VIEW_ACCESS_LOGS' },
     { path: '/app/classes', label: 'Classes', icon: 'school', superAdminOnly: false, permissionKey: 'VIEW_CLASSES' },
     { path: '/app/subjects', label: 'Subjects', icon: 'book', superAdminOnly: false, permissionKey: 'VIEW_SUBJECTS' },
     { path: '/app/students', label: 'Students', icon: 'people', superAdminOnly: false, permissionKey: 'VIEW_STUDENTS' },

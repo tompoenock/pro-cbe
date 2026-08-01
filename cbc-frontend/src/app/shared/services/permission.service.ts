@@ -12,6 +12,7 @@ export enum SchoolPermission {
   APPROVE_USER = 'APPROVE_USER',
   MANAGE_USER_PERMISSIONS = 'MANAGE_USER_PERMISSIONS',
   RESET_USER_PASSWORD = 'RESET_USER_PASSWORD',
+  VIEW_ACCESS_LOGS = 'VIEW_ACCESS_LOGS',
   VIEW_STAFF = 'VIEW_STAFF',
   CREATE_STAFF = 'CREATE_STAFF',
   EDIT_STAFF = 'EDIT_STAFF',
@@ -71,6 +72,13 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
       { key: SchoolPermission.APPROVE_USER, label: 'Approve User' },
       { key: SchoolPermission.MANAGE_USER_PERMISSIONS, label: 'Manage Permissions' },
       { key: SchoolPermission.RESET_USER_PASSWORD, label: 'Reset User Password' },
+    ],
+  },
+  {
+    name: 'Security',
+    icon: '🔐',
+    permissions: [
+      { key: SchoolPermission.VIEW_ACCESS_LOGS, label: 'View Access Logs' },
     ],
   },
   {

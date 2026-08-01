@@ -1,0 +1,112 @@
+<div>
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-2xl font-bold" [class]="darkMode ? 'text-white' : 'text-gray-800'">Access Log</h2>
+    <button (click)="loadLogs()" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+      ↻ Refresh
+    </button>
+  </div>
+
+  @if (error) { <div class="mb-4 p-3 rounded-lg bg-red-100 text-red-800 text-sm">{{ error }}</div> }
+
+  <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 mb-6">
+    <div class="rounded-xl p-4 border" [class]="darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200 shadow-sm'">
+      <p class="text-xs uppercase tracking-wider" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">Total Events</p>
+      <p class="mt-2 text-2xl font-semibold" [class]="darkMode ? 'text-white' : 'text-gray-900'">{{ totalCount }}</p>
+    </div>
+    <div class="rounded-xl p-4 border" [class]="darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200 shadow-sm'">
+      <p class="text-xs uppercase tracking-wider" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">Successful</p>
+      <p class="mt-2 text-2xl font-semibold text-emerald-600">{{ successCount }}</p>
+    </div>
+    <div class="rounded-xl p-4 border" [class]="darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200 shadow-sm'">
+      <p class="text-xs uppercase tracking-wider" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">Failed Attempts</p>
+      <p class="mt-2 text-2xl font-semibold text-red-500">{{ failedCount }}</p>
+    </div>
+    <div class="rounded-xl p-4 border" [class]="darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200 shadow-sm'">
+      <p class="text-xs uppercase tracking-wider" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">Currently Logged In</p>
+      <p class="mt-2 text-2xl font-semibold" [class]="darkMode ? 'text-white' : 'text-gray-900'">{{ activeCount }}</p>
+    </div>
+  </div>
+
+  <div class="mb-4 flex flex-wrap items-center gap-3">
+    <input [(ngModel)]="searchTerm" placeholder="Search user, email or IP..." (keyup.enter)="loadLogs()"
+      class="px-3 py-2 rounded-lg border text-sm outline-none w-72"
+      [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-400' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'" />
+    <select [(ngModel)]="filterStatus" (ngModelChange)="loadLogs()"
+      class="px-3 py-2 rounded-lg border text-sm outline-none"
+      [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300 text-gray-900'">
+      <option value="">All Status</option>
+      <option value="success">Success</option>
+      <option value="failed">Failed</option>
+    </select>
+    <select [(ngModel)]="limit" (ngModelChange)="loadLogs()"
+      class="px-3 py-2 rounded-lg border text-sm outline-none"
+      [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300 text-gray-900'">
+      <option [ngValue]="50">50 records</option>
+      <option [ngValue]="100">100 records</option>
+      <option [ngValue]="200">200 records</option>
+      <option [ngValue]="500">500 records</option>
+    </select>
+    <button (click)="resetFilters()" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+      [class]="darkMode ? 'text-slate-300 hover:bg-slate-700' : 'text-gray-600 hover:bg-gray-100'">
+      Clear Filters
+    </button>
+  </div>
+
+  <div class="rounded-xl overflow-hidden" [class]="darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-gray-200 shadow-sm'">
+    @if (loading) {
+      <div class="p-8 text-center" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">Loading...</div>
+    } @else if (logs.length === 0) {
+      <div class="p-8 text-center" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">No access logs found.</div>
+    } @else {
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead>
+            <tr [class]="darkMode ? 'bg-slate-700/50 text-slate-300' : 'bg-gray-50 text-gray-600'">
+              <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">User</th>
+              <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">Role</th>
+              <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">Status</th>
+              <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">IP Address</th>
+              <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">Login Time</th>
+              <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">Logout Time</th>
+              <th class="text-right px-4 py-3 text-xs font-semibold uppercase tracking-wider">Duration</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (log of logs; track log._id) {
+              <tr class="border-t transition-colors" [class]="darkMode ? 'border-slate-700 hover:bg-slate-700/30' : 'border-gray-100 hover:bg-gray-50'">
+                <td class="px-4 py-4">
+                  <div class="font-medium" [class]="darkMode ? 'text-white' : 'text-gray-900'">{{ log.username || log.email || 'Unknown' }}</div>
+                  <div class="text-xs" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">{{ log.email || '-' }}</div>
+                </td>
+                <td class="px-4 py-4">
+                  <span [class]="getRoleBadgeClasses(log.role)" class="capitalize">{{ log.role || 'unknown' }}</span>
+                </td>
+                <td class="px-4 py-4">
+                  <span [class]="getStatusBadgeClasses(log.status)" class="inline-flex items-center rounded-full px-2 py-1 text-[11px] font-semibold capitalize">
+                    {{ log.status }}
+                  </span>
+                  @if (log.status === 'failed' && log.failureReason) {
+                    <div class="text-[11px] mt-0.5" [class]="darkMode ? 'text-slate-400' : 'text-gray-400'">{{ log.failureReason }}</div>
+                  }
+                </td>
+                <td class="px-4 py-4">
+                  <span class="px-2 py-0.5 rounded text-xs font-mono" [class]="darkMode ? 'bg-slate-700 text-slate-300' : 'bg-gray-100 text-gray-700'">{{ log.ipAddress || '-' }}</span>
+                  <div class="text-[11px] mt-0.5" [class]="darkMode ? 'text-slate-500' : 'text-gray-400'">{{ getBrowser(log.userAgent) }}</div>
+                </td>
+                <td class="px-4 py-4 text-sm" [class]="darkMode ? 'text-slate-300' : 'text-gray-600'">{{ formatDate(log.loginAt) }}</td>
+                <td class="px-4 py-4 text-sm" [class]="darkMode ? 'text-slate-300' : 'text-gray-600'">{{ formatDate(log.logoutAt) }}</td>
+                <td class="px-4 py-4 text-sm text-right font-medium" [class]="darkMode ? 'text-slate-300' : 'text-gray-600'">
+                  @if (log.status === 'success') {
+                    {{ getDuration(log) }}
+                  } @else {
+                    -
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</div>

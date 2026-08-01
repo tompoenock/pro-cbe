@@ -9,6 +9,7 @@ import {
   UseGuards,
   Request,
   Req,
+  Query,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
@@ -41,7 +42,8 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(@Body() loginDto: LoginDto, @Request() req: any) {
-    return this.authService.login(loginDto, req.ip);
+    const userAgent = req.headers?.['user-agent'];
+    return this.authService.login(loginDto, req.ip, userAgent);
   }
 
   @Post('forgot-password')
@@ -63,6 +65,23 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async logout(@Request() req: any) {
     return this.authService.logout(req.user._id);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+  @Roles(Role.Admin, Role.SuperAdmin)
+  @Permissions(SchoolPermission.VIEW_ACCESS_LOGS)
+  @Get('access-logs')
+  async getAccessLogs(
+    @Request() req: any,
+    @Query('status') status?: string,
+    @Query('search') search?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.authService.getAccessLogs(req.user.organizationId, {
+      status,
+      search,
+      limit: limit ? parseInt(limit, 10) : undefined,
+    });
   }
 
   @UseGuards(JwtAuthGuard)

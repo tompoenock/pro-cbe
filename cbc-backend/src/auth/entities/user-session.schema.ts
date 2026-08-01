@@ -5,11 +5,20 @@ export type UserSessionDocument = UserSession & Document;
 
 @Schema()
 export class UserSession {
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true, index: true })
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', index: true })
   userId: MongooseSchema.Types.ObjectId;
 
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'School' })
   schoolId: MongooseSchema.Types.ObjectId;
+
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Organization', index: true })
+  organizationId: MongooseSchema.Types.ObjectId;
+
+  @Prop({ enum: ['success', 'failed'], default: 'success', index: true })
+  status: string;
+
+  @Prop()
+  email: string;
 
   @Prop({ required: true })
   loginAt: Date;
@@ -19,8 +28,15 @@ export class UserSession {
 
   @Prop()
   ipAddress: string;
+
+  @Prop()
+  userAgent: string;
+
+  @Prop()
+  failureReason: string;
 }
 
 export const UserSessionSchema = SchemaFactory.createForClass(UserSession);
 UserSessionSchema.set('timestamps', true);
 UserSessionSchema.index({ schoolId: 1, loginAt: -1 });
+UserSessionSchema.index({ organizationId: 1, loginAt: -1 });

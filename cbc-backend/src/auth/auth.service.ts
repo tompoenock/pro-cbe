@@ -124,21 +124,24 @@ export class AuthService {
 
   // ─── LOGIN ───────────────────────────────────────────────────
 
-  async login(loginDto: LoginDto, ipAddress?: string) {
+  async login(loginDto: LoginDto, ipAddress?: string, userAgent?: string) {
     const { email, password } = loginDto;
     const normalizedEmail = email.toLowerCase();
 
     const user = await this.userModel.findOne({ email: normalizedEmail });
     if (!user) {
+      await this.recordFailedAttempt(normalizedEmail, ipAddress, userAgent, 'User not found');
       throw new UnauthorizedException('Invalid credentials');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
+      await this.recordFailedAttempt(normalizedEmail, ipAddress, userAgent, 'Invalid password', user);
       throw new UnauthorizedException('Invalid credentials');
     }
 
     if (!user.isApproved) {
+      await this.recordFailedAttempt(normalizedEmail, ipAddress, userAgent, 'Account not approved', user);
       throw new UnauthorizedException(
         'Your account is pending approval. You will receive a notification once an administrator approves your account.',
       );
@@ -155,7 +158,7 @@ export class AuthService {
     const access_token = this.jwtService.sign(payload);
 
     // Create session record
-    await this.startSession(user._id, ipAddress);
+    await this.startSession(user, ipAddress, userAgent);
 
     return {
       access_token,
@@ -396,6 +399,68 @@ export class AuthService {
     return sessions.map((s) => s.userId.toString());
   }
 
+  // ─── ACCESS LOGS ─────────────────────────────────────────────
+
+  async getAccessLogs(
+    organizationId?: string,
+    options: { status?: string; search?: string; limit?: number } = {},
+  ): Promise<any[]> {
+    const pipeline: any[] = [];
+
+    const match: any = {};
+    if (organizationId) {
+      match.organizationId = new Types.ObjectId(organizationId);
+    }
+    if (options.status === 'success' || options.status === 'failed') {
+      match.status = options.status;
+    }
+
+    if (Object.keys(match).length > 0) {
+      pipeline.push({ $match: match });
+    }
+
+    pipeline.push(
+      { $sort: { loginAt: -1 } },
+      { $limit: Math.min(options.limit || 200, 500) },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+    );
+
+    let sessions = await this.sessionModel.aggregate(pipeline).exec();
+
+    const search = options.search?.trim()?.toLowerCase();
+    if (search) {
+      sessions = sessions.filter((s: any) => {
+        const email = (s.email || s.user?.email || '').toLowerCase();
+        const username = (s.user?.username || '').toLowerCase();
+        const ip = (s.ipAddress || '').toLowerCase();
+        return email.includes(search) || username.includes(search) || ip.includes(search);
+      });
+    }
+
+    return sessions.map((s: any) => ({
+      _id: s._id,
+      userId: s.userId,
+      username: s.user?.username || null,
+      email: s.user?.email || s.email || null,
+      role: s.user?.role || null,
+      status: s.status,
+      failureReason: s.failureReason || null,
+      ipAddress: s.ipAddress,
+      userAgent: s.userAgent,
+      loginAt: s.loginAt,
+      logoutAt: s.logoutAt,
+      createdAt: s.createdAt,
+    }));
+  }
+
   // ─── UTILITY ─────────────────────────────────────────────────
 
   private generateRandomPassword(length: number): string {
@@ -407,10 +472,38 @@ export class AuthService {
     return result;
   }
 
-  private async startSession(userId: any, ipAddress?: string): Promise<void> {
+  private async startSession(user: any, ipAddress?: string, userAgent?: string): Promise<void> {
+    const userId = user?._id ?? user;
     await this.sessionModel.create({
       userId: userId instanceof Types.ObjectId ? userId : new Types.ObjectId(userId),
+      organizationId: user?.organizationId
+        ? (user.organizationId instanceof Types.ObjectId
+            ? user.organizationId
+            : new Types.ObjectId(user.organizationId))
+        : undefined,
+      email: user?.email,
+      status: 'success',
       ipAddress: ipAddress || 'unknown',
+      userAgent: userAgent || 'unknown',
+      loginAt: new Date(),
+    } as any);
+  }
+
+  private async recordFailedAttempt(
+    email: string,
+    ipAddress?: string,
+    userAgent?: string,
+    failureReason?: string,
+    user?: any,
+  ): Promise<void> {
+    await this.sessionModel.create({
+      userId: user?._id,
+      organizationId: user?.organizationId,
+      email,
+      status: 'failed',
+      ipAddress: ipAddress || 'unknown',
+      userAgent: userAgent || 'unknown',
+      failureReason,
       loginAt: new Date(),
     } as any);
   }
