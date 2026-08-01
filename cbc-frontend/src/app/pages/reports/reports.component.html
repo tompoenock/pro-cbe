@@ -76,6 +76,98 @@
       <span class="section-count">{{ filteredStudentReports().length }} reports</span>
     </div>
 
+    <!-- Generate reports (all students / single student) -->
+    <div class="generate-pathway-panel" *ngIf="isAdmin || isTeacher">
+      <div class="panel-title">
+        <h3>Generate Reports</h3>
+        <p>Generate reports for all students in the school, or a single report for one student.</p>
+      </div>
+
+      <!-- Option 1: All students -->
+      <div class="individual-student-panel">
+        <div class="panel-title">
+          <h3>Generate Reports for All Students</h3>
+          <p>Generate a report for every student in the school.</p>
+        </div>
+        <div class="student-search-row">
+          <div class="search-field">
+            <label>Report Type</label>
+            <select [(ngModel)]="allStudentsReportType" class="form-control">
+              <option value="comprehensive">Comprehensive</option>
+              <option value="performance">Performance</option>
+              <option value="pathway">Pathway</option>
+            </select>
+          </div>
+          <div class="search-field">
+            <label>Start Date</label>
+            <input type="date" [(ngModel)]="allStudentsGenStartDate" class="form-control" />
+          </div>
+          <div class="search-field">
+            <label>End Date</label>
+            <input type="date" [(ngModel)]="allStudentsGenEndDate" class="form-control" />
+          </div>
+          <button class="btn-search" (click)="generateAllStudentsReport()" [disabled]="generatingAllStudents">
+            {{ generatingAllStudents ? 'Generating...' : 'Generate All Students' }}
+          </button>
+        </div>
+        <div *ngIf="generatingAllStudents" class="student-search-results">
+          <p class="no-data">
+            Generating reports for {{ allStudentsProgress.total }} students... ({{ allStudentsProgress.done }} / {{ allStudentsProgress.total }} done)
+          </p>
+        </div>
+      </div>
+
+      <!-- Option 2: Single student by admission number / name -->
+      <div class="individual-student-panel">
+        <div class="panel-title">
+          <h3>Generate Single Student Report</h3>
+          <p>Search for a student by admission number or name, then generate a report for that student only.</p>
+        </div>
+        <div class="student-search-row">
+          <div class="search-field">
+            <label>Admission No / Name</label>
+            <input
+              type="text"
+              [(ngModel)]="studentSearchTerm"
+              (keyup.enter)="searchStudents()"
+              placeholder="e.g. ADM-2024-001 or John Doe"
+              class="form-control" />
+          </div>
+          <div class="search-field">
+            <label>Report Type</label>
+            <select [(ngModel)]="individualStudentGenReportType" class="form-control">
+              <option value="comprehensive">Comprehensive</option>
+              <option value="performance">Performance</option>
+              <option value="pathway">Pathway</option>
+            </select>
+          </div>
+          <button class="btn-search" (click)="searchStudents()" [disabled]="searchingStudents">
+            {{ searchingStudents ? 'Searching...' : 'Search Student' }}
+          </button>
+        </div>
+
+        <div class="student-search-results" *ngIf="studentSearchResults.length > 0">
+          <div class="student-result-item" *ngFor="let s of studentSearchResults">
+            <div class="student-result-info">
+              <strong>{{ s.firstName }} {{ s.lastName }}</strong>
+              <span>
+                {{ s.admissionNumber }}<ng-container *ngIf="s.classId?.name"> · {{ s.classId.name }}</ng-container>
+              </span>
+            </div>
+            <button
+              class="btn-generate-small"
+              (click)="generateStudentReportFor(s)"
+              [disabled]="isGeneratingStudentReport(s._id)">
+              {{ isGeneratingStudentReport(s._id) ? 'Generating...' : 'Generate Report' }}
+            </button>
+          </div>
+        </div>
+        <p *ngIf="studentSearchResults.length === 0 && studentSearchTerm" class="no-data">
+          No students found. Try a different admission number or name.
+        </p>
+      </div>
+    </div>
+
     <div class="reports-grid" *ngIf="filteredStudentReports().length > 0; else noReports">
       <div class="report-card" *ngFor="let report of paginatedStudentReports">
         <div class="report-card-top">
@@ -267,7 +359,7 @@
     <div class="reports-grid" *ngIf="schoolReports.length > 0; else noSchoolReports">
       <div class="report-card" *ngFor="let report of paginatedSchoolReports">
         <div class="report-card-top">
-          <div class="report-avatar school">📊</div>
+          <div class="report-avatar">{{ getReportTitleInitials(report) }}</div>
           <div class="report-identity">
             <h3>{{ getPathwayReportTitle(report) }}</h3>
             <span class="report-meta">{{ report.generatedDate | date: 'mediumDate' }}</span>
@@ -524,7 +616,7 @@
         <div *ngIf="selectedReport.pathwayRecommendation" class="detail-block">
           <h3>Pathway Recommendation</h3>
           <p><strong>Recommended Pathway:</strong> {{ selectedReport.pathwayRecommendation.recommendedPathway?.name || 'N/A' }}</p>
-          <p><strong>GPA:</strong> {{ selectedReport.pathwayRecommendation.studentGPA | number:'1.2-2' }}</p>
+          <!-- <p><strong>GPA:</strong> {{ selectedReport.pathwayRecommendation.studentGPA | number:'1.2-2' }}</p> -->
           <div *ngIf="selectedReport.pathwayRecommendation.matchingSubjects?.length">
             <strong>Matched Subjects:</strong>
             <ul>

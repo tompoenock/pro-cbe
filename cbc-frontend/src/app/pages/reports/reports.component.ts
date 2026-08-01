@@ -10,7 +10,7 @@ import { StudentService } from '../../shared/services/student.service';
 import { PathwaysService } from '../pathways/pathways.service';
 import { ThemeService } from '../../shared/services/theme.service';
 import { forkJoin, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, tap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-reports',
@@ -123,6 +123,16 @@ export class ReportsComponent implements OnInit {
     const first = report?.studentId?.firstName || '';
     const last = report?.studentId?.lastName || '';
     return `${(first[0] || '').toUpperCase()}${(last[0] || '').toUpperCase()}` || '?';
+  }
+
+  getReportTitleInitials(report: any): string {
+    const title = this.getPathwayReportTitle(report).replace(/^Pathway Report:\s*/i, '');
+    return title
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0].toUpperCase())
+      .join('') || '?';
   }
 
   // Modal states
@@ -306,6 +316,131 @@ export class ReportsComponent implements OnInit {
 
   isGeneratingPathway(pathwayId: string): boolean {
     return this.generatingPathwayIds.has(pathwayId);
+  }
+
+  // Individual student report generation state
+  studentSearchTerm: string = '';
+  searchingStudents = false;
+  studentSearchResults: any[] = [];
+  individualStudentGenReportType: string = 'comprehensive';
+  generatingStudentIds: Set<string> = new Set();
+
+  // All-students report generation state
+  allStudentsReportType: string = 'comprehensive';
+  allStudentsGenStartDate: string = this.yearStart();
+  allStudentsGenEndDate: string = this.today();
+  generatingAllStudents = false;
+  allStudentsProgress = { done: 0, total: 0 };
+
+  searchStudents(): void {
+    const term = (this.studentSearchTerm || '').trim();
+    if (!term) {
+      this.error = 'Enter an admission number or student name to search.';
+      return;
+    }
+    this.error = null;
+    this.searchingStudents = true;
+    this.studentService.getAll(undefined, term).subscribe({
+      next: (students: any[]) => {
+        this.studentSearchResults = students || [];
+        this.searchingStudents = false;
+      },
+      error: (err) => {
+        this.error = err.error?.message || 'Failed to search students';
+        this.searchingStudents = false;
+        console.error('Error searching students:', err);
+      },
+    });
+  }
+
+  isGeneratingStudentReport(studentId: string): boolean {
+    return this.generatingStudentIds.has(studentId);
+  }
+
+  generateAllStudentsReport(): void {
+    if (!this.allStudentsGenStartDate || !this.allStudentsGenEndDate) {
+      this.error = 'Please select a start and end date.';
+      return;
+    }
+    this.error = null;
+    this.success = null;
+    this.generatingAllStudents = true;
+    this.allStudentsProgress = { done: 0, total: 0 };
+
+    this.studentService.getAll().subscribe({
+      next: (students: any[]) => {
+        const list = (students || []).filter((s) => s?._id);
+        if (list.length === 0) {
+          this.generatingAllStudents = false;
+          this.error = 'No students found in the school.';
+          return;
+        }
+        this.allStudentsProgress.total = list.length;
+
+        const requests = list.map((s) =>
+          this.reportsService
+            .generateStudentReport(
+              s._id,
+              this.allStudentsReportType,
+              this.allStudentsGenStartDate,
+              this.allStudentsGenEndDate,
+            )
+            .pipe(
+              tap(() => this.allStudentsProgress.done++),
+              catchError((err) => {
+                console.error('Failed to generate report for student', s._id, err?.message || err);
+                this.allStudentsProgress.done++;
+                return of(null);
+              }),
+            ),
+        );
+
+        forkJoin(requests).subscribe({
+          next: (results: any[]) => {
+            this.generatingAllStudents = false;
+            const succeeded = (results || []).filter(Boolean).length;
+            this.success = `Student reports generated for ${succeeded} of ${list.length} students!`;
+            this.loadStudentReports();
+            setTimeout(() => (this.success = null), 6000);
+          },
+          error: () => {
+            this.generatingAllStudents = false;
+            this.error = 'Failed to generate student reports.';
+          },
+        });
+      },
+      error: (err) => {
+        this.generatingAllStudents = false;
+        this.error = err.error?.message || 'Failed to load students';
+        console.error('Error loading students for report generation:', err);
+      },
+    });
+  }
+
+  generateStudentReportFor(student: any): void {
+    if (!student?._id) return;
+    this.error = null;
+    this.success = null;
+    this.generatingStudentIds.add(student._id);
+    this.reportsService
+      .generateStudentReport(
+        student._id,
+        this.individualStudentGenReportType,
+        this.pathwayGenStartDate,
+        this.pathwayGenEndDate,
+      )
+      .subscribe({
+        next: () => {
+          this.generatingStudentIds.delete(student._id);
+          this.success = `Report generated for ${student.firstName || ''} ${student.lastName || ''}!`;
+          setTimeout(() => (this.success = null), 4000);
+        },
+        error: (err) => {
+          this.generatingStudentIds.delete(student._id);
+          this.error = err.error?.message || 'Failed to generate student report';
+          console.error('Error generating student report:', err);
+        },
+      });
   }
 
   getPathwayReportTitle(report: any): string {
