@@ -44,6 +44,12 @@ export class SchoolReport {
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: false })
   generatedBy?: MongooseSchema.Types.ObjectId;
 
+  @Prop({ required: false })
+  reportType?: string;
+
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Pathway', required: false })
+  pathway?: MongooseSchema.Types.ObjectId;
+
   @Prop({ default: false })
   isDeleted?: boolean;
 }

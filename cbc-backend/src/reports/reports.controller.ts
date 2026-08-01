@@ -10,7 +10,7 @@ import {
   Req,
 } from '@nestjs/common';
 import { ReportsService } from './reports.service';
-import { CreateStudentReportDto, CreateSchoolReportDto, CreateClassSummaryReportDto } from './dto/create-report.dto';
+import { CreateStudentReportDto, CreateSchoolReportDto, CreateClassSummaryReportDto, CreatePathwaySchoolReportDto } from './dto/create-report.dto';
 import { ReportQueryDto } from './dto/report-query.dto';
 import { PathwayReportQueryDto, ClassPathwayReportQueryDto } from './dto/pathway-report-query.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -76,6 +76,16 @@ export class ReportsController {
   @Roles(Role.Admin, Role.SuperAdmin, Role.Teacher)
   generateClassSummaryReport(@Body() dto: CreateClassSummaryReportDto, @Req() req: any) {
     return this.reportsService.generateClassSummaryReport(dto, req.user);
+  }
+
+  /**
+   * Generate a per-pathway school report
+   * Stores a SchoolReport scoped to a single registered pathway
+   */
+  @Post('school/pathway')
+  @Roles(Role.Admin, Role.SuperAdmin, Role.Teacher)
+  generatePathwaySchoolReport(@Body() dto: CreatePathwaySchoolReportDto, @Req() req: any) {
+    return this.reportsService.generatePathwaySchoolReport(dto, req.user.id);
   }
 
   /**

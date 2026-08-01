@@ -396,6 +396,54 @@ export class ReportsService {
         startDate: new Date(dto.startDate),
         endDate: new Date(dto.endDate),
       },
+      reportType: 'school',
+      generatedDate: new Date(),
+      generatedBy: userId ? new Types.ObjectId(userId) : undefined,
+    });
+
+    return report.save();
+  }
+
+  /**
+   * Generate a per-pathway school report
+   * Computes the live pathway report and stores it as a SchoolReport
+   * scoped to a single registered pathway.
+   */
+  async generatePathwaySchoolReport(
+    dto: { pathwayId: string; startDate?: string; endDate?: string },
+    userId?: string,
+  ): Promise<SchoolReportDocument> {
+    if (!Types.ObjectId.isValid(dto.pathwayId)) {
+      throw new BadRequestException('Invalid pathway ID');
+    }
+
+    const pathway = await this.pathwayModel.findById(dto.pathwayId).exec();
+    if (!pathway || pathway.isDeleted) {
+      throw new NotFoundException('Pathway not found');
+    }
+
+    const pathwayReport = await this.getPathwayReport({ pathwayId: dto.pathwayId });
+
+    const data = pathwayReport.data || [];
+    const entry = data[0] || null;
+    const stats = entry?.statistics || {};
+    const totalStudents = stats.totalStudents || 0;
+
+    const report = new this.schoolReportModel({
+      reportPeriod: {
+        startDate: dto.startDate ? new Date(dto.startDate) : new Date(new Date().getFullYear(), 0, 1),
+        endDate: dto.endDate ? new Date(dto.endDate) : new Date(),
+      },
+      totalStudents,
+      pathwayDistribution: pathway.name ? { [pathway.name]: totalStudents } : undefined,
+      performanceStatistics: {
+        pathwayId: (pathway as any)._id,
+        pathwayName: pathway.name,
+        pathwayCode: pathway.code,
+        ...pathwayReport,
+      },
+      reportType: 'pathway',
+      pathway: (pathway as any)._id,
       generatedDate: new Date(),
       generatedBy: userId ? new Types.ObjectId(userId) : undefined,
     });
@@ -410,6 +458,7 @@ export class ReportsService {
     return this.schoolReportModel
       .find({ isDeleted: false })
       .populate('generatedBy', 'firstName lastName')
+      .populate('pathway', 'name code')
       .sort({ generatedDate: -1 })
       .exec();
   }
@@ -425,6 +474,7 @@ export class ReportsService {
     const report = await this.schoolReportModel
       .findById(reportId)
       .populate('generatedBy', 'firstName lastName')
+      .populate('pathway', 'name code')
       .exec();
 
     if (!report || report.isDeleted) {

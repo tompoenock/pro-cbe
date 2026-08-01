@@ -61,6 +61,16 @@ export class ReportsService {
   }
 
   /**
+   * Generate a per-pathway school report (scoped to a single registered pathway)
+   */
+  generatePathwayReport(pathwayId: string, startDate?: string, endDate?: string): Observable<any> {
+    const data: any = { pathwayId };
+    if (startDate) data.startDate = startDate;
+    if (endDate) data.endDate = endDate;
+    return this.http.post(`${this.apiUrl}/school/pathway`, data);
+  }
+
+  /**
    * Generate a class summary report (server-side)
    */
   generateClassSummary(classId: string, startDate?: string, endDate?: string): Observable<any> {
@@ -89,6 +99,30 @@ export class ReportsService {
    */
   getReportAnalytics(): Observable<any> {
     return this.http.get(`${this.apiUrl}/analytics/summary`);
+  }
+
+  /**
+   * Get a pathway report - grouped by pathway (and class if provided)
+   * Route: GET /api/reports/pathway/report?classId=&pathwayId=&academicYear=&term=&limit=&page=
+   */
+  getPathwayReport(pathwayId?: string, classId?: string, academicYear?: string, term?: string): Observable<any> {
+    let params = new HttpParams();
+    if (pathwayId) params = params.set('pathwayId', pathwayId);
+    if (classId) params = params.set('classId', classId);
+    if (academicYear) params = params.set('academicYear', academicYear);
+    if (term) params = params.set('term', term);
+    return this.http.get(`${this.apiUrl}/pathway/report`, { params });
+  }
+
+  /**
+   * Get a class pathway report - all pathways and their students in a class
+   * Route: GET /api/reports/pathway/class/:classId?academicYear=&term=&limit=&page=
+   */
+  getClassPathwayReport(classId: string, academicYear?: string, term?: string): Observable<any> {
+    let params = new HttpParams();
+    if (academicYear) params = params.set('academicYear', academicYear);
+    if (term) params = params.set('term', term);
+    return this.http.get(`${this.apiUrl}/pathway/class/${classId}`, { params });
   }
 
   /**

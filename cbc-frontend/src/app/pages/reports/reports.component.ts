@@ -7,6 +7,7 @@ import { AuthService } from '../../authentication/core/auth/auth.service';
 import { ParentPortalService } from '../parent-portal/parent-portal.service';
 import { ClassService } from '../../shared/services/class.service';
 import { StudentService } from '../../shared/services/student.service';
+import { PathwaysService } from '../pathways/pathways.service';
 import { ThemeService } from '../../shared/services/theme.service';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
@@ -36,6 +37,94 @@ export class ReportsComponent implements OnInit {
   darkMode = false;
   classes: any[] = [];
 
+  // Per-pathway report state
+  pathways: any[] = [];
+  selectedPathwayId: string = '';
+  pathwayReport: any = null;
+  pathwayReportLoading = false;
+
+  // Per-pathway report generation state
+  pathwayGenStartDate: string = this.yearStart();
+  pathwayGenEndDate: string = this.today();
+  generatingPathwayIds: Set<string> = new Set();
+  generatingAllPathways = false;
+
+  // Pagination
+  pageSize = 12;
+  studentPage = 1;
+  schoolPage = 1;
+  pathwayPage = 1;
+
+  onStudentFilterChange(): void {
+    this.studentPage = 1;
+  }
+
+  get paginatedStudentReports(): any[] {
+    const list = this.filteredStudentReports();
+    const start = (this.studentPage - 1) * this.pageSize;
+    return list.slice(start, start + this.pageSize);
+  }
+
+  get studentPageCount(): number {
+    return Math.max(1, Math.ceil(this.filteredStudentReports().length / this.pageSize));
+  }
+
+  get studentPages(): number[] {
+    return Array.from({ length: this.studentPageCount }, (_, i) => i + 1);
+  }
+
+  goToStudentPage(page: number): void {
+    if (page >= 1 && page <= this.studentPageCount) {
+      this.studentPage = page;
+    }
+  }
+
+  get paginatedSchoolReports(): any[] {
+    const list = this.schoolReports || [];
+    const start = (this.schoolPage - 1) * this.pageSize;
+    return list.slice(start, start + this.pageSize);
+  }
+
+  get schoolPageCount(): number {
+    return Math.max(1, Math.ceil((this.schoolReports || []).length / this.pageSize));
+  }
+
+  get schoolPages(): number[] {
+    return Array.from({ length: this.schoolPageCount }, (_, i) => i + 1);
+  }
+
+  goToSchoolPage(page: number): void {
+    if (page >= 1 && page <= this.schoolPageCount) {
+      this.schoolPage = page;
+    }
+  }
+
+  get paginatedPathways(): any[] {
+    const list = this.pathways || [];
+    const start = (this.pathwayPage - 1) * this.pageSize;
+    return list.slice(start, start + this.pageSize);
+  }
+
+  get pathwayPageCount(): number {
+    return Math.max(1, Math.ceil((this.pathways || []).length / this.pageSize));
+  }
+
+  get pathwayPages(): number[] {
+    return Array.from({ length: this.pathwayPageCount }, (_, i) => i + 1);
+  }
+
+  goToPathwayPage(page: number): void {
+    if (page >= 1 && page <= this.pathwayPageCount) {
+      this.pathwayPage = page;
+    }
+  }
+
+  getReportInitials(report: any): string {
+    const first = report?.studentId?.firstName || '';
+    const last = report?.studentId?.lastName || '';
+    return `${(first[0] || '').toUpperCase()}${(last[0] || '').toUpperCase()}` || '?';
+  }
+
   // Modal states
   showGenerateModal = false;
   showViewModal = false;
@@ -60,6 +149,7 @@ export class ReportsComponent implements OnInit {
     private parentPortalService: ParentPortalService,
     private classService: ClassService,
     private studentService: StudentService,
+    private pathwaysService: PathwaysService,
     private themeService: ThemeService,
   ) {
     const role = this.authService.getUserRole() || localStorage.getItem('role') || sessionStorage.getItem('userRole') || '';
@@ -96,7 +186,168 @@ export class ReportsComponent implements OnInit {
         this.loadAnalytics();
         this.selectedReportType = 'school';
       }
+      if (this.isAdmin || this.isTeacher) {
+        this.loadPathways();
+      }
     }
+  }
+
+  loadPathways(): void {
+    this.pathwaysService.getAllPathways(undefined, 1, 100).subscribe({
+      next: (data: any) => {
+        this.pathways = (data?.data || data || []).filter((p: any) => !p.isDeleted);
+        if (this.pathways.length === 0) {
+          this.pathwaysService.getActivePathways().subscribe({
+            next: (active: any[]) => {
+              this.pathways = active || [];
+            },
+            error: (err) => {
+              console.error('Failed to load active pathways', err);
+            },
+          });
+        }
+      },
+      error: (err) => {
+        console.error('Failed to load pathways for reports', err);
+        this.pathwaysService.getActivePathways().subscribe({
+          next: (active: any[]) => {
+            this.pathways = active || [];
+          },
+          error: (err2) => {
+            console.error('Failed to load active pathways', err2);
+          },
+        });
+      },
+    });
+  }
+
+  yearStart(): string {
+    const d = new Date();
+    return `${d.getFullYear()}-01-01`;
+  }
+
+  today(): string {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  generateWholeSchoolReport(): void {
+    if (!this.pathwayGenStartDate || !this.pathwayGenEndDate) {
+      this.error = 'Please select a start and end date.';
+      return;
+    }
+    this.error = null;
+    this.success = null;
+    this.reportsService.generateSchoolReport(this.pathwayGenStartDate, this.pathwayGenEndDate).subscribe({
+      next: () => {
+        this.success = 'School report generated successfully!';
+        this.loadSchoolReports();
+        setTimeout(() => (this.success = null), 4000);
+      },
+      error: (err) => {
+        this.error = err.error?.message || 'Failed to generate school report';
+        console.error('Error generating school report:', err);
+      },
+    });
+  }
+
+  generatePathway(pathwayId: string): void {
+    if (!pathwayId) return;
+    this.error = null;
+    this.success = null;
+    this.generatingPathwayIds.add(pathwayId);
+    this.reportsService
+      .generatePathwayReport(pathwayId, this.pathwayGenStartDate, this.pathwayGenEndDate)
+      .subscribe({
+        next: () => {
+          this.generatingPathwayIds.delete(pathwayId);
+          this.success = 'Pathway report generated successfully!';
+          this.loadSchoolReports();
+          setTimeout(() => (this.success = null), 4000);
+        },
+        error: (err) => {
+          this.generatingPathwayIds.delete(pathwayId);
+          this.error = err.error?.message || 'Failed to generate pathway report';
+          console.error('Error generating pathway report:', err);
+        },
+      });
+  }
+
+  generateAllPathways(): void {
+    if (this.pathways.length === 0) return;
+    if (!this.pathwayGenStartDate || !this.pathwayGenEndDate) {
+      this.error = 'Please select a start and end date.';
+      return;
+    }
+    this.error = null;
+    this.success = null;
+    this.generatingAllPathways = true;
+
+    const requests = this.pathways.map((p) =>
+      this.reportsService
+        .generatePathwayReport(p._id, this.pathwayGenStartDate, this.pathwayGenEndDate)
+        .pipe(catchError((err) => {
+          console.error('Failed to generate report for pathway', p._id, err?.message || err);
+          return of(null);
+        })),
+    );
+
+    forkJoin(requests).subscribe({
+      next: () => {
+        this.generatingAllPathways = false;
+        this.success = 'All pathway reports generated successfully!';
+        this.loadSchoolReports();
+        setTimeout(() => (this.success = null), 5000);
+      },
+      error: () => {
+        this.generatingAllPathways = false;
+      },
+    });
+  }
+
+  isGeneratingPathway(pathwayId: string): boolean {
+    return this.generatingPathwayIds.has(pathwayId);
+  }
+
+  getPathwayReportTitle(report: any): string {
+    if (report?.reportType === 'pathway') {
+      const name =
+        report.pathway?.name ||
+        report.performanceStatistics?.pathwayName ||
+        report.pathwayDistribution
+          ? Object.keys(report.pathwayDistribution)[0]
+          : '';
+      return name ? `Pathway Report: ${name}` : 'Pathway Report';
+    }
+    return 'School Report';
+  }
+
+  onPathwayChange(): void {
+    this.error = null;
+    if (!this.selectedPathwayId) {
+      this.pathwayReport = null;
+      return;
+    }
+    this.pathwayReportLoading = true;
+    this.reportsService.getPathwayReport(this.selectedPathwayId).subscribe({
+      next: (report: any) => {
+        this.pathwayReport = report;
+        this.pathwayReportLoading = false;
+      },
+      error: (err) => {
+        this.error = err.error?.message || 'Failed to load pathway report';
+        this.pathwayReportLoading = false;
+        console.error('Error loading pathway report:', err);
+      },
+    });
+  }
+
+  getSelectedPathway(): any {
+    return this.pathways.find((p) => p._id === this.selectedPathwayId) || null;
+  }
+
+  getPathwayReportEntries(): any[] {
+    const data = this.pathwayReport?.data || [];
+    return Array.isArray(data) ? data : [];
   }
 
   loadClasses(): void {
@@ -119,6 +370,7 @@ export class ReportsComponent implements OnInit {
         const children = kids || [];
         if (children.length === 0) {
           this.studentReports = [];
+          this.studentPage = 1;
           this.loading = false;
           return;
         }
@@ -148,6 +400,7 @@ export class ReportsComponent implements OnInit {
               });
               this.studentReports.push(...reports);
             });
+            this.studentPage = 1;
             this.loading = false;
           },
           error: (err) => {
@@ -170,6 +423,7 @@ export class ReportsComponent implements OnInit {
     this.reportsService.getAllStudentReports().subscribe({
       next: (data) => {
         this.studentReports = data.data || data;
+        this.studentPage = 1;
         this.loading = false;
       },
       error: (err) => {
@@ -184,6 +438,7 @@ export class ReportsComponent implements OnInit {
     this.reportsService.getAllSchoolReports().subscribe({
       next: (data) => {
         this.schoolReports = data;
+        this.schoolPage = 1;
       },
       error: (err) => {
         console.error('Error loading school reports:', err);
@@ -206,6 +461,11 @@ export class ReportsComponent implements OnInit {
     if (this.selectedReportType === 'school' && this.schoolReports.length === 0) {
       this.loadSchoolReports();
     }
+    this.studentPage = 1;
+    this.schoolPage = 1;
+    this.pathwayPage = 1;
+    this.selectedPathwayId = '';
+    this.pathwayReport = null;
   }
 
   get canGenerateReport(): boolean {
@@ -649,6 +909,60 @@ export class ReportsComponent implements OnInit {
       this.generatePdf('School Report', bodyLines, sections);
     } catch (err: any) {
       console.error('Failed to download school report:', err);
+      this.error = 'Failed to download report. Please try again.';
+    }
+  }
+
+  downloadPathwayReport(): void {
+    try {
+      const r = this.pathwayReport;
+      if (!r) {
+        this.error = 'No pathway report loaded to download.';
+        return;
+      }
+
+      const pathway = this.getSelectedPathway() || {};
+      const filters = r.filters || {};
+      const bodyLines = [
+        [
+          { label: 'Pathway:', value: `${pathway.name || filters.pathwayId || 'N/A'} (${pathway.code || ''})` },
+          { label: 'Generated:', value: r.generatedDate ? new Date(r.generatedDate).toLocaleString() : 'N/A' },
+        ],
+        [
+          { label: 'Academic Year:', value: filters.academicYear || 'N/A' },
+          { label: 'Term:', value: filters.term || 'All' },
+        ],
+      ];
+
+      const sections: { heading: string; content: string[] }[] = [];
+      const entries = this.getPathwayReportEntries();
+      for (const entry of entries) {
+        const st = entry.statistics || {};
+        const entryLines = [
+          `Pathway: ${entry.pathway?.name || pathway.name || 'Unknown'}`,
+          `Total Students: ${st.totalStudents ?? 0}`,
+          `Average Score: ${st.averageScore ?? 'N/A'}%`,
+          `Average Completion Rate: ${st.averageCompletionRate ?? 'N/A'}%`,
+          `High Performers (>=80): ${st.highPerformers ?? 0}`,
+          `Average Performers (60-79): ${st.averagePerformers ?? 0}`,
+          `Needs Support (<60): ${st.needsSupport ?? 0}`,
+        ];
+        if (entry.students?.length) {
+          entryLines.push('');
+          entryLines.push('Students:');
+          for (const s of entry.students) {
+            entryLines.push(
+              `  ${s.studentName || 'N/A'} (${s.admissionNumber || 'N/A'}) — Class: ${s.class || 'N/A'} | Avg: ${s.averageScore ?? '-'} | Completion: ${s.completionRate ?? '-'}% | High: ${s.highestScore ?? '-'} | Low: ${s.lowestScore ?? '-'} | Records: ${s.performanceRecords ?? '-'}`,
+            );
+          }
+        }
+        sections.push({ heading: entry.pathway?.name || pathway.name || 'Pathway Report', content: entryLines });
+      }
+
+      const title = `Pathway Report - ${pathway.name || ''}`.trim();
+      this.generatePdf(title, bodyLines, sections);
+    } catch (err: any) {
+      console.error('Failed to download pathway report:', err);
       this.error = 'Failed to download report. Please try again.';
     }
   }

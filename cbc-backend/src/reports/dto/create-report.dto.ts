@@ -45,3 +45,16 @@ export class CreateClassSummaryReportDto {
   @IsOptional()
   reportType?: string;
 }
+
+export class CreatePathwaySchoolReportDto {
+  @IsMongoId()
+  pathwayId!: string;
+
+  @IsDateString()
+  @IsOptional()
+  startDate?: string;
+
+  @IsDateString()
+  @IsOptional()
+  endDate?: string;
+}

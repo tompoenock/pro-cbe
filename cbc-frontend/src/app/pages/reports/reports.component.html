@@ -37,17 +37,25 @@
         <option value="school" *ngIf="isAdmin || isTeacher">School Reports</option>
       </select>
     </div>
+    <!-- Per-pathway report selector (school view) -->
+    <div *ngIf="selectedReportType === 'school' && (isAdmin || isTeacher)" class="control-group">
+      <label>Pathway Report:</label>
+      <select [(ngModel)]="selectedPathwayId" (change)="onPathwayChange()">
+        <option value="">All (School Reports)</option>
+        <option *ngFor="let p of pathways" [value]="p._id">{{ p.name }} ({{ p.code }})</option>
+      </select>
+    </div>
     <!-- Parent filters: select child and report type -->
     <div *ngIf="isParent" class="control-group">
       <label>Child:</label>
-      <select [(ngModel)]="selectedChildId">
+      <select [(ngModel)]="selectedChildId" (ngModelChange)="onStudentFilterChange()">
         <option value="all">All children</option>
         <option *ngFor="let c of children" [value]="c._id">{{ c.firstName }} {{ c.lastName }}</option>
       </select>
     </div>
     <div *ngIf="isParent" class="control-group">
       <label>Report Type:</label>
-      <select [(ngModel)]="selectedReportTypeFilter">
+      <select [(ngModel)]="selectedReportTypeFilter" (ngModelChange)="onStudentFilterChange()">
         <option value="all">All types</option>
         <option value="pathway">Pathway</option>
         <option value="performance">Performance</option>
@@ -65,31 +73,30 @@
   <div *ngIf="!loading && selectedReportType === 'student'" class="student-reports-section">
     <div class="section-header">
       <h2>Student Reports</h2>
+      <span class="section-count">{{ filteredStudentReports().length }} reports</span>
     </div>
 
-    <div class="reports-list" *ngIf="filteredStudentReports().length > 0; else noReports">
-      <div class="report-card" *ngFor="let report of filteredStudentReports()">
-        <div class="report-header">
+    <div class="reports-grid" *ngIf="filteredStudentReports().length > 0; else noReports">
+      <div class="report-card" *ngFor="let report of paginatedStudentReports">
+        <div class="report-card-top">
+          <div class="report-avatar">{{ getReportInitials(report) }}</div>
+          <div class="report-identity">
             <h3>{{ report.studentId?.firstName }} {{ report.studentId?.lastName }}</h3>
+            <span class="report-meta">
+              {{ report.generatedDate | date: 'mediumDate' }}
+              <ng-container *ngIf="report.reportPeriod">· {{ report.reportPeriod.startDate | date: 'shortDate' }} - {{ report.reportPeriod.endDate | date: 'shortDate' }}</ng-container>
+            </span>
+          </div>
           <span class="report-type-badge" [class]="'type-' + report.reportType">{{ report.reportType }}</span>
         </div>
-        
-        <div class="report-details">
-          <p><strong>Generated:</strong> {{ report.generatedDate | date: 'short' }}</p>
-          <p *ngIf="report.reportPeriod">
-            <strong>Period:</strong> {{ report.reportPeriod.startDate | date: 'short' }} - {{ report.reportPeriod.endDate | date: 'short' }}
-          </p>
-          <p *ngIf="report.reportSummary" class="report-summary-snippet">
-            {{ report.reportSummary }}
-          </p>
-          
-          <div *ngIf="report.performanceSummary" class="performance-summary">
-            <h4>Performance Summary</h4>
-            <p><strong>GPA:</strong> {{ report.performanceSummary.overallGPA | number: '1.2-2' }}</p>
-          </div>
 
-          <div *ngIf="report.pathwayRecommendation" class="pathway-summary">
-            <h4>Pathway Recommendation</h4>
+        <div class="report-details">
+          <p *ngIf="report.reportSummary" class="report-summary-snippet">{{ report.reportSummary }}</p>
+
+          <div class="stat-chips">
+            <span class="chip" *ngIf="report.performanceSummary"><i>GPA</i><b>{{ report.performanceSummary.overallGPA | number: '1.2-2' }}</b></span>
+            <span class="chip" *ngIf="report.performanceSummary"><i>Score</i><b>{{ report.performanceSummary.overallScore ?? 'N/A' }}%</b></span>
+            <span class="chip" *ngIf="report.pathwayRecommendation?.recommendedPathway"><i>Pathway</i><b>{{ report.pathwayRecommendation.recommendedPathway.name }}</b></span>
           </div>
         </div>
 
@@ -104,25 +111,178 @@
     <ng-template #noReports>
       <p class="no-data">No student reports available. Create one to get started.</p>
     </ng-template>
+
+    <div class="pagination" *ngIf="filteredStudentReports().length > pageSize">
+      <button class="page-btn" (click)="goToStudentPage(studentPage - 1)" [disabled]="studentPage === 1">Prev</button>
+      <button
+        class="page-btn"
+        [class.active]="studentPage === p"
+        *ngFor="let p of studentPages"
+        (click)="goToStudentPage(p)">
+        {{ p }}
+      </button>
+      <button class="page-btn" (click)="goToStudentPage(studentPage + 1)" [disabled]="studentPage === studentPageCount">Next</button>
+    </div>
   </div>
 
   <!-- School Reports -->
   <div *ngIf="!loading && selectedReportType === 'school' && (isAdmin || isTeacher)" class="school-reports-section">
     <div class="section-header">
-      <h2>School Reports</h2>
+      <h2>{{ selectedPathwayId ? 'Per Pathway Report' : 'School Reports' }}</h2>
     </div>
 
-    <div class="reports-list" *ngIf="schoolReports.length > 0; else noSchoolReports">
-      <div class="report-card" *ngFor="let report of schoolReports">
-        <div class="report-header">
-          <h3>School Report</h3>
-          <span class="report-date">{{ report.generatedDate | date: 'short' }}</span>
+    <!-- Generate reports (school + per pathway) -->
+    <div class="generate-pathway-panel">
+      <div class="panel-title">
+        <h3>Generate Reports</h3>
+        <p>Generate a whole-school report, or a separate report for each registered pathway.</p>
+      </div>
+      <div class="date-range-row">
+        <div class="date-field">
+          <label>Start Date</label>
+          <input type="date" [(ngModel)]="pathwayGenStartDate" class="form-control" />
         </div>
-        
+        <div class="date-field">
+          <label>End Date</label>
+          <input type="date" [(ngModel)]="pathwayGenEndDate" class="form-control" />
+        </div>
+        <button class="btn-generate" (click)="generateWholeSchoolReport()">Generate School Report</button>
+      </div>
+
+      <div class="pathway-list">
+        <div class="pathway-item" *ngFor="let p of paginatedPathways">
+          <div class="pathway-info">
+            <strong>{{ p.name }}</strong>
+            <span>{{ p.code }}</span>
+          </div>
+          <button
+            class="btn-generate-small"
+            (click)="generatePathway(p._id)"
+            [disabled]="isGeneratingPathway(p._id)">
+            {{ isGeneratingPathway(p._id) ? 'Generating...' : 'Generate Report' }}
+          </button>
+        </div>
+        <div *ngIf="pathways.length === 0" class="no-data">
+          No pathways registered. Add pathways first to generate per-pathway reports.
+        </div>
+      </div>
+
+      <div class="pagination" *ngIf="pathways.length > pageSize">
+        <button class="page-btn" (click)="goToPathwayPage(pathwayPage - 1)" [disabled]="pathwayPage === 1">Prev</button>
+        <button
+          class="page-btn"
+          [class.active]="pathwayPage === p"
+          *ngFor="let p of pathwayPages"
+          (click)="goToPathwayPage(p)">
+          {{ p }}
+        </button>
+        <button class="page-btn" (click)="goToPathwayPage(pathwayPage + 1)" [disabled]="pathwayPage === pathwayPageCount">Next</button>
+      </div>
+
+      <button
+        class="btn-generate-all"
+        (click)="generateAllPathways()"
+        [disabled]="generatingAllPathways || pathways.length === 0">
+        {{ generatingAllPathways ? 'Generating all pathway reports...' : 'Generate All Pathway Reports' }}
+      </button>
+    </div>
+
+    <!-- Per Pathway Report -->
+    <div *ngIf="selectedPathwayId">
+      <div *ngIf="pathwayReportLoading" class="loading-state">
+        <p>Loading pathway report...</p>
+      </div>
+
+      <div *ngIf="!pathwayReportLoading && pathwayReport" class="pathway-report">
+        <div class="report-card">
+          <div class="report-card-top">
+            <div class="report-avatar school">🎓</div>
+            <div class="report-identity">
+              <h3>{{ getSelectedPathway()?.name }}</h3>
+              <span class="report-meta">Generated {{ pathwayReport.generatedDate | date: 'mediumDate' }}</span>
+            </div>
+            <span class="report-type-badge type-pathway">Pathway</span>
+          </div>
+
+          <div class="report-actions">
+            <button class="btn-download" (click)="downloadPathwayReport()">Download</button>
+          </div>
+
+          <div class="report-details">
+            <p><strong>Pathway Code:</strong> {{ getSelectedPathway()?.code }}</p>
+            <p *ngIf="getSelectedPathway()?.description"><strong>Description:</strong> {{ getSelectedPathway()?.description }}</p>
+            <p><strong>Academic Year:</strong> {{ pathwayReport.filters?.academicYear }}</p>
+          </div>
+
+          <div *ngFor="let entry of getPathwayReportEntries()" class="pathway-report-block">
+            <div class="pathway-stats-grid">
+              <div class="stat-item"><strong>{{ entry.statistics?.totalStudents || 0 }}</strong><span>Students</span></div>
+              <div class="stat-item"><strong>{{ entry.statistics?.averageScore ?? 'N/A' }}%</strong><span>Avg Score</span></div>
+              <div class="stat-item"><strong>{{ entry.statistics?.averageCompletionRate ?? 'N/A' }}%</strong><span>Completion</span></div>
+              <div class="stat-item"><strong>{{ entry.statistics?.highPerformers || 0 }}</strong><span>High (80+)</span></div>
+              <div class="stat-item"><strong>{{ entry.statistics?.averagePerformers || 0 }}</strong><span>Avg (60-79)</span></div>
+              <div class="stat-item"><strong>{{ entry.statistics?.needsSupport || 0 }}</strong><span>Needs Support</span></div>
+            </div>
+
+            <div class="table-responsive" *ngIf="entry.students?.length; else noPathwayStudents">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Student</th>
+                    <th>Admission</th>
+                    <th>Class</th>
+                    <th>Avg Score</th>
+                    <th>Completion</th>
+                    <th>Highest</th>
+                    <th>Lowest</th>
+                    <th>Records</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let s of entry.students; let i = index">
+                    <td>{{ i + 1 }}</td>
+                    <td>{{ s.studentName }}</td>
+                    <td>{{ s.admissionNumber }}</td>
+                    <td>{{ s.class }}</td>
+                    <td>{{ s.averageScore }}</td>
+                    <td>{{ s.completionRate }}%</td>
+                    <td>{{ s.highestScore }}</td>
+                    <td>{{ s.lowestScore }}</td>
+                    <td>{{ s.performanceRecords }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <ng-template #noPathwayStudents>
+              <p class="no-data">No students with performance data in this pathway.</p>
+            </ng-template>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- All School Reports -->
+    <div *ngIf="!selectedPathwayId">
+    <div class="reports-grid" *ngIf="schoolReports.length > 0; else noSchoolReports">
+      <div class="report-card" *ngFor="let report of paginatedSchoolReports">
+        <div class="report-card-top">
+          <div class="report-avatar school">📊</div>
+          <div class="report-identity">
+            <h3>{{ getPathwayReportTitle(report) }}</h3>
+            <span class="report-meta">{{ report.generatedDate | date: 'mediumDate' }}</span>
+          </div>
+          <span class="report-type-badge" [class]="report.reportType === 'pathway' ? 'type-pathway' : 'type-school'">{{ report.reportType === 'pathway' ? 'Pathway' : 'School' }}</span>
+        </div>
+
         <div class="report-details">
-          <p><strong>Period:</strong> {{ report.reportPeriod.startDate | date: 'short' }} - {{ report.reportPeriod.endDate | date: 'short' }}</p>
-          <p><strong>Total Students:</strong> {{ report.totalStudents }}</p>
-          
+          <p *ngIf="report.reportPeriod">
+            <strong>Period:</strong> {{ report.reportPeriod.startDate | date: 'shortDate' }} - {{ report.reportPeriod.endDate | date: 'shortDate' }}
+          </p>
+          <div class="stat-chips">
+            <span class="chip"><i>Students</i><b>{{ report.totalStudents ?? 'N/A' }}</b></span>
+            <span class="chip" *ngIf="report.pathwayDistribution"><i>Pathways</i><b>{{ getDistributionKeys(report.pathwayDistribution).length }}</b></span>
+          </div>
           <div *ngIf="report.pathwayDistribution" class="pathway-distribution">
             <h4>Pathway Distribution</h4>
             <ul>
@@ -144,6 +304,19 @@
     <ng-template #noSchoolReports>
       <p class="no-data">No school reports available.</p>
     </ng-template>
+
+    <div class="pagination" *ngIf="schoolReports.length > pageSize">
+      <button class="page-btn" (click)="goToSchoolPage(schoolPage - 1)" [disabled]="schoolPage === 1">Prev</button>
+      <button
+        class="page-btn"
+        [class.active]="schoolPage === p"
+        *ngFor="let p of schoolPages"
+        (click)="goToSchoolPage(p)">
+        {{ p }}
+      </button>
+      <button class="page-btn" (click)="goToSchoolPage(schoolPage + 1)" [disabled]="schoolPage === schoolPageCount">Next</button>
+    </div>
+    </div>
   </div>
 
   <!-- Analytics -->
