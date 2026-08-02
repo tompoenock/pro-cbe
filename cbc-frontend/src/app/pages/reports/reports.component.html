@@ -9,7 +9,7 @@
         <p>View and download student and school reports</p>
       </div>
       <button 
-        *ngIf="canGenerateReports()" 
+        *ngIf="canGenerateReports() && !isTeacher" 
         (click)="openGenerateModal()" 
         class="btn-add"
         [disabled]="isParent && !canGenerateReport">
@@ -33,7 +33,7 @@
     <div class="control-group">
       <label>Report Type:</label>
       <select [(ngModel)]="selectedReportType" (change)="onReportTypeChange()">
-        <option value="student">Student Reports</option>
+        <option value="student" *ngIf="!isTeacher || isAdmin">Student Reports</option>
         <option value="school" *ngIf="isAdmin || isTeacher">School Reports</option>
       </select>
     </div>
@@ -70,7 +70,7 @@
   </div>
 
   <!-- Student Reports -->
-  <div *ngIf="!loading && selectedReportType === 'student'" class="student-reports-section">
+  <div *ngIf="!loading && selectedReportType === 'student' && !isTeacher" class="student-reports-section">
     <div class="section-header">
       <h2>Student Reports</h2>
       <span class="section-count">{{ filteredStudentReports().length }} reports</span>

@@ -192,13 +192,20 @@ export class ReportsComponent implements OnInit {
       this.loadStudentReportsForParent();
       this.selectedReportType = 'student';
     } else {
-      this.loadStudentReports();
+      // Teachers only get pathway reports (school section), not individual student reports
+      if (this.isTeacher && !this.isAdmin) {
+        this.selectedReportType = 'school';
+      } else {
+        this.loadStudentReports();
+      }
       // Load available classes for teachers/admins to allow class-based report generation
       if (this.isAdmin || this.isTeacher) {
         this.loadClasses();
       }
-      if (this.isAdmin) {
+      if (this.isAdmin || this.isTeacher) {
         this.loadSchoolReports();
+      }
+      if (this.isAdmin) {
         this.loadAnalytics();
         this.selectedReportType = 'school';
       }
