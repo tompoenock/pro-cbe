@@ -223,13 +223,27 @@
       <h2>{{ selectedPathwayId ? 'Per Pathway Report' : 'School Reports' }}</h2>
     </div>
 
-    <!-- Generate reports (school + per pathway) -->
+    <!-- Generate reports (whole school / class / per pathway) -->
     <div class="generate-pathway-panel">
       <div class="panel-title">
         <h3>Generate Reports</h3>
-        <p>Generate a whole-school report, or a separate report for each registered pathway.</p>
+        <p>Generate a report for the entire school or a particular class, or a separate report for each registered pathway.</p>
       </div>
       <div class="date-range-row">
+        <div class="date-field">
+          <label>Report Scope</label>
+          <select [(ngModel)]="schoolReportScope" class="form-control">
+            <option value="entire" *ngIf="isAdmin">Entire School</option>
+            <option value="class">Particular Class</option>
+          </select>
+        </div>
+        <div class="date-field" *ngIf="schoolReportScope === 'class'">
+          <label>Class</label>
+          <select [(ngModel)]="schoolGenClassId" class="form-control">
+            <option value="">-- Select class --</option>
+            <option *ngFor="let c of classes" [value]="c._id">{{ c.name || c.className || c.displayName }}</option>
+          </select>
+        </div>
         <div class="date-field">
           <label>Start Date</label>
           <input type="date" [(ngModel)]="pathwayGenStartDate" class="form-control" />
@@ -238,7 +252,17 @@
           <label>End Date</label>
           <input type="date" [(ngModel)]="pathwayGenEndDate" class="form-control" />
         </div>
-        <button class="btn-generate" (click)="generateWholeSchoolReport()" *ngIf="canGenerateReports()">Generate School Report</button>
+        <button
+          *ngIf="canGenerateReports()"
+          class="btn-generate"
+          (click)="schoolReportScope === 'entire' ? generateWholeSchoolReport() : generateClassSummary()"
+          [disabled]="generatingSchoolReport || generatingClassReport">
+          {{
+            schoolReportScope === 'class'
+              ? (generatingClassReport ? 'Generating...' : 'Generate Class Report')
+              : (generatingSchoolReport ? 'Generating...' : 'Generate School Report')
+          }}
+        </button>
       </div>
 
       <div class="pathway-list">
@@ -370,7 +394,7 @@
             <h3>{{ getPathwayReportTitle(report) }}</h3>
             <span class="report-meta">{{ report.generatedDate | date: 'mediumDate' }}</span>
           </div>
-          <span class="report-type-badge" [class]="report.reportType === 'pathway' ? 'type-pathway' : 'type-school'">{{ report.reportType === 'pathway' ? 'Pathway' : 'School' }}</span>
+          <span class="report-type-badge" [class]="report.reportType === 'pathway' ? 'type-pathway' : (report.reportType === 'class' ? 'type-class' : 'type-school')">{{ report.reportType === 'pathway' ? 'Pathway' : (report.reportType === 'class' ? 'Class' : 'School') }}</span>
         </div>
 
         <div class="report-details">

@@ -969,6 +969,13 @@ export class ReportsService {
       reportPeriod: { startDate, endDate },
       generatedDate: new Date(),
       generatedBy: user?.id ? new Types.ObjectId(user.id) : undefined,
+      reportType: 'class',
+      class: {
+        id: classDoc._id,
+        name: classDoc.name,
+        section: classDoc.section,
+        academicYear: classDoc.academicYear,
+      },
       totalStudents: classReport.totalClassStudents,
       pathwayDistribution: {},
       performanceStatistics: classReport,

@@ -54,6 +54,12 @@ export class ReportsComponent implements OnInit {
   generatingPathwayIds: Set<string> = new Set();
   generatingAllPathways = false;
 
+  // School / class report generation state
+  schoolReportScope: 'entire' | 'class' = 'entire';
+  schoolGenClassId: string = '';
+  generatingSchoolReport = false;
+  generatingClassReport = false;
+
   // Pagination
   pageSize = 12;
   studentPage = 1;
@@ -195,6 +201,7 @@ export class ReportsComponent implements OnInit {
       // Teachers only get pathway reports (school section), not individual student reports
       if (this.isTeacher && !this.isAdmin) {
         this.selectedReportType = 'school';
+        this.schoolReportScope = 'class';
       } else {
         this.loadStudentReports();
       }
@@ -260,17 +267,49 @@ export class ReportsComponent implements OnInit {
     }
     this.error = null;
     this.success = null;
+    this.generatingSchoolReport = true;
     this.reportsService.generateSchoolReport(this.pathwayGenStartDate, this.pathwayGenEndDate).subscribe({
       next: () => {
+        this.generatingSchoolReport = false;
         this.success = 'School report generated successfully!';
         this.loadSchoolReports();
         setTimeout(() => (this.success = null), 4000);
       },
       error: (err) => {
+        this.generatingSchoolReport = false;
         this.error = err.error?.message || 'Failed to generate school report';
         console.error('Error generating school report:', err);
       },
     });
+  }
+
+  generateClassSummary(): void {
+    if (!this.schoolGenClassId) {
+      this.error = 'Please select a class to generate a report for.';
+      return;
+    }
+    if (!this.pathwayGenStartDate || !this.pathwayGenEndDate) {
+      this.error = 'Please select a start and end date.';
+      return;
+    }
+    this.error = null;
+    this.success = null;
+    this.generatingClassReport = true;
+    this.reportsService
+      .generateClassSummary(this.schoolGenClassId, this.pathwayGenStartDate, this.pathwayGenEndDate)
+      .subscribe({
+        next: () => {
+          this.generatingClassReport = false;
+          this.success = 'Class report generated successfully!';
+          this.loadSchoolReports();
+          setTimeout(() => (this.success = null), 4000);
+        },
+        error: (err) => {
+          this.generatingClassReport = false;
+          this.error = err.error?.message || 'Failed to generate class report';
+          console.error('Error generating class report:', err);
+        },
+      });
   }
 
   generatePathway(pathwayId: string): void {
@@ -465,6 +504,11 @@ export class ReportsComponent implements OnInit {
           ? Object.keys(report.pathwayDistribution)[0]
           : '';
       return name ? `Pathway Report: ${name}` : 'Pathway Report';
+    }
+    if (report?.reportType === 'class') {
+      const c = report.class || {};
+      const section = c.section ? ` - ${c.section}` : '';
+      return c.name ? `Class Report: ${c.name}${section}` : 'Class Report';
     }
     return 'School Report';
   }
@@ -1032,6 +1076,11 @@ export class ReportsComponent implements OnInit {
       if (r.reportPeriod) {
         bodyLines.push([
           { label: 'Period:', value: `${new Date(r.reportPeriod.startDate).toLocaleDateString()} — ${new Date(r.reportPeriod.endDate).toLocaleDateString()}` },
+        ]);
+      }
+      if (r.class?.name) {
+        bodyLines.push([
+          { label: 'Class:', value: `${r.class.name}${r.class.section ? ' - ' + r.class.section : ''}` },
         ]);
       }
       bodyLines.push([

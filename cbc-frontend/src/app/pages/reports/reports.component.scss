@@ -208,6 +208,11 @@
     background: #e8f0fb;
     color: #0b3a66;
   }
+
+  &.type-class {
+    background: #fff4e0;
+    color: #b45309;
+  }
 }
 
 .report-date {
@@ -851,7 +856,8 @@ textarea.form-control {
         color: #4a6a8a;
       }
 
-      input {
+      input,
+      select {
         padding: 8px 10px;
         border: 1px solid #d7e2f0;
         border-radius: 6px;
