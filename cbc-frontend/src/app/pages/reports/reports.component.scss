@@ -435,6 +435,45 @@
   margin-top: 12px;
 }
 
+.chart-wrapper {
+  border-radius: 18px;
+  background: #0e1726;
+  padding: 14px;
+}
+
+.chart-wrapper ngx-charts-bar-vertical {
+  height: 100%;
+}
+
+.chart-wrapper .ngx-charts text,
+.chart-wrapper .ngx-charts g text {
+  fill: #cbd5e1;
+}
+
+.chart-wrapper .ngx-charts .axis path,
+.chart-wrapper .ngx-charts .axis line,
+.chart-wrapper .ngx-charts .gridline line {
+  stroke: rgba(255, 255, 255, 0.12);
+}
+
+.chart-wrapper .ngx-charts .bar {
+  opacity: 0.92;
+}
+
+.chart-wrapper .ngx-charts .bar-label {
+  fill: #f8fafc;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.chart-wrapper .ngx-charts .x.axis text {
+  font-size: 12px;
+}
+
+.chart-wrapper .ngx-charts .y.axis text {
+  font-size: 12px;
+}
+
 .score-bar {
   margin-bottom: 12px;
 }
@@ -984,27 +1023,58 @@ textarea.form-control {
           color: #5a6f8a;
         }
       }
+
+      .pathway-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
     }
   }
 
-  .btn-generate-small {
+  .btn-generate-small,
+  .btn-view-small,
+  .btn-download-small {
     padding: 7px 14px;
-    background: #e6f0ff;
-    color: #0b3a66;
-    border: 1px solid #c9ddf7;
     border-radius: 6px;
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
     transition: background 0.3s ease;
+  }
+
+  .btn-generate-small {
+    background: #e6f0ff;
+    color: #0b3a66;
+    border: 1px solid #c9ddf7;
 
     &:hover:not(:disabled) {
-      background: #cfe2fb;
+      background: #d3e5ff;
     }
 
     &:disabled {
-      opacity: 0.5;
+      opacity: 0.6;
       cursor: not-allowed;
+    }
+  }
+
+  .btn-view-small {
+    background: #0066cc;
+    color: white;
+    border: 1px solid #0066cc;
+
+    &:hover {
+      background: #0052a3;
+    }
+  }
+
+  .btn-download-small {
+    background: #28a745;
+    color: white;
+    border: 1px solid #28a745;
+
+    &:hover {
+      background: #218838;
     }
   }
 

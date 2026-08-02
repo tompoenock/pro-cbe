@@ -57,33 +57,30 @@ export class LayoutComponent implements OnInit {
       // Super admin always sees everything
       if (this.isSuperAdmin) return true;
 
-      // Role-restricted items
-      if (item.roles && item.roles.length > 0) {
-        // If the user's role is included in the item's roles, show it immediately
-        if (this.userRole && item.roles.includes(this.userRole)) return true;
-        // otherwise hide
-        return false;
-      }
-
       // Super-admin only flag
       if (item.superAdminOnly && !this.isSuperAdmin) return false;
 
-      // If a permissionKey is defined, require that permission (or allow via cross-module map)
+      // Role-based access (if the item restricts by role)
+      const roleAllowed = item.roles && item.roles.length > 0
+        ? !!(this.userRole && item.roles.includes(this.userRole))
+        : true;
+
+      // Permission-based access (if the item declares a permission key)
+      let permissionAllowed = true;
       if (item.permissionKey) {
         const key = item.permissionKey as string;
-        if (this.permissionService.hasPermission(key)) return true;
-
-        // check cross-module alternatives
-        const alternatives = this.crossModuleAccess[key] || [];
-        for (const alt of alternatives) {
-          if (this.permissionService.hasPermission(alt)) return true;
-        }
-
-        // no permission found — hide the nav item
-        return false;
+        permissionAllowed = this.permissionService.hasPermission(key)
+          || (this.crossModuleAccess[key] || []).some((alt) => this.permissionService.hasPermission(alt));
       }
 
-      return true;
+      // Role-restricted items: show when the role matches OR the permission is granted.
+      // This lets users granted e.g. VIEW_REPORTS see the Reports item regardless of role.
+      if (item.roles && item.roles.length > 0) {
+        return roleAllowed || permissionAllowed;
+      }
+
+      // Non-role-restricted items: require the declared permission (or cross-module access).
+      return permissionAllowed;
     });
   }
 

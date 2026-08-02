@@ -9,7 +9,7 @@
         <p>View and download student and school reports</p>
       </div>
       <button 
-        *ngIf="isTeacher || isAdmin || isParent" 
+        *ngIf="canGenerateReports()" 
         (click)="openGenerateModal()" 
         class="btn-add"
         [disabled]="isParent && !canGenerateReport">
@@ -77,7 +77,7 @@
     </div>
 
     <!-- Generate reports (all students / single student) -->
-    <div class="generate-pathway-panel" *ngIf="isAdmin || isTeacher">
+    <div class="generate-pathway-panel" *ngIf="canGenerateReports()">
       <div class="panel-title">
         <h3>Generate Reports</h3>
         <p>Generate reports for all students in the school, or a single report for one student.</p>
@@ -193,8 +193,8 @@
         </div>
 
         <div class="report-actions">
-          <button class="btn-view" (click)="viewReport(report)">View Details</button>
-          <button class="btn-download" (click)="downloadReport(report)">Download</button>
+          <button class="btn-view" (click)="viewReport(report)" *ngIf="canViewReports()">View Details</button>
+          <button class="btn-download" (click)="downloadReport(report)" *ngIf="canExportReports()">Download</button>
           <button class="btn-delete" (click)="deleteReport(report._id)" *ngIf="isAdmin || isParent">Delete</button>
         </div>
       </div>
@@ -238,7 +238,7 @@
           <label>End Date</label>
           <input type="date" [(ngModel)]="pathwayGenEndDate" class="form-control" />
         </div>
-        <button class="btn-generate" (click)="generateWholeSchoolReport()">Generate School Report</button>
+        <button class="btn-generate" (click)="generateWholeSchoolReport()" *ngIf="canGenerateReports()">Generate School Report</button>
       </div>
 
       <div class="pathway-list">
@@ -247,12 +247,17 @@
             <strong>{{ p.name }}</strong>
             <span>{{ p.code }}</span>
           </div>
-          <button
-            class="btn-generate-small"
-            (click)="generatePathway(p._id)"
-            [disabled]="isGeneratingPathway(p._id)">
-            {{ isGeneratingPathway(p._id) ? 'Generating...' : 'Generate Report' }}
-          </button>
+          <div class="pathway-actions">
+            <button class="btn-view-small" (click)="viewPathway(p)" *ngIf="canViewReports()">View</button>
+            <button class="btn-download-small" (click)="downloadPathway(p)" *ngIf="canExportReports()">Download</button>
+            <button
+              *ngIf="canGenerateReports()"
+              class="btn-generate-small"
+              (click)="generatePathway(p._id)"
+              [disabled]="isGeneratingPathway(p._id)">
+              {{ isGeneratingPathway(p._id) ? 'Generating...' : 'Generate Report' }}
+            </button>
+          </div>
         </div>
         <div *ngIf="pathways.length === 0" class="no-data">
           No pathways registered. Add pathways first to generate per-pathway reports.
@@ -272,6 +277,7 @@
       </div>
 
       <button
+        *ngIf="canGenerateReports()"
         class="btn-generate-all"
         (click)="generateAllPathways()"
         [disabled]="generatingAllPathways || pathways.length === 0">
@@ -297,7 +303,7 @@
           </div>
 
           <div class="report-actions">
-            <button class="btn-download" (click)="downloadPathwayReport()">Download</button>
+            <button class="btn-download" (click)="downloadPathwayReport()" *ngIf="canExportReports()">Download</button>
           </div>
 
           <div class="report-details">
@@ -385,11 +391,11 @@
           </div>
         </div>
 
-        <div class="report-actions">
-          <button class="btn-view" (click)="viewSchoolReport(report)">View Details</button>
-          <button class="btn-download" (click)="downloadSchoolReport(report)">Download</button>
-          <button class="btn-delete" (click)="deleteReport(report._id)" *ngIf="isAdmin">Delete</button>
-        </div>
+          <div class="report-actions">
+            <button class="btn-view" (click)="viewSchoolReport(report)" *ngIf="canViewReports()">View Details</button>
+            <button class="btn-download" (click)="downloadSchoolReport(report)" *ngIf="canExportReports()">Download</button>
+            <button class="btn-delete" (click)="deleteReport(report._id)" *ngIf="isAdmin">Delete</button>
+          </div>
       </div>
     </div>
 
@@ -594,22 +600,51 @@
           <h3>Performance Summary</h3>
           <p><strong>Overall GPA:</strong> {{ selectedReport.performanceSummary.overallGPA | number:'1.2-2' }}</p>
           <p><strong>Overall Score:</strong> {{ selectedReport.performanceSummary.overallScore | number:'1.2-2' }}%</p>
-          <div class="score-graph" *ngIf="selectedReport.performanceSummary.subjectScores?.length">
+          <div *ngIf="selectedReport.performanceSummary.subjectScores?.length" class="score-graph">
             <h4>Subject Performance</h4>
-            <div class="score-bar" *ngFor="let subject of selectedReport.performanceSummary.subjectScores">
-              <div class="label">{{ subject.subjectName }} ({{ subject.averageScore }}%)</div>
-              <div class="bar-track">
-                <div class="bar-fill" [style.width]="getScoreBarWidth(subject.averageScore)"></div>
-              </div>
+            <div class="chart-wrapper" style="height: 320px; margin-top: 12px;">
+              <ngx-charts-bar-vertical
+                [results]="getSubjectScoresChartData()"
+                [scheme]="subjectScoresColorScheme"
+                [xAxis]="true"
+                [yAxis]="true"
+                [showXAxisLabel]="true"
+                [showYAxisLabel]="true"
+                [xAxisLabel]="'Subject'"
+                [yAxisLabel]="'Average Score'"
+                [yScaleMax]="100"
+                [gradient]="false"
+                [legend]="false"
+                [roundEdges]="true"
+                [showDataLabel]="true"
+                [showGridLines]="true"
+                [barPadding]="8"
+                [animations]="true">
+              </ngx-charts-bar-vertical>
             </div>
           </div>
           <div *ngIf="selectedReport.performanceSummary.trends?.length" class="detail-block">
             <h4>Term Trends</h4>
-            <ul>
-              <li *ngFor="let trend of selectedReport.performanceSummary.trends">
-                {{ trend.term }}: {{ trend.averageScore | number:'1.2-2' }}%
-              </li>
-            </ul>
+            <div class="chart-wrapper" style="height: 280px; margin-top: 12px;">
+              <ngx-charts-bar-vertical
+                [results]="getTermTrendsChartData()"
+                [scheme]="termTrendsColorScheme"
+                [xAxis]="true"
+                [yAxis]="true"
+                [showXAxisLabel]="true"
+                [showYAxisLabel]="true"
+                [xAxisLabel]="'Term'"
+                [yAxisLabel]="'Average Score'"
+                [yScaleMax]="100"
+                [gradient]="false"
+                [legend]="false"
+                [roundEdges]="true"
+                [showDataLabel]="true"
+                [showGridLines]="true"
+                [barPadding]="8"
+                [animations]="true">
+              </ngx-charts-bar-vertical>
+            </div>
           </div>
         </div>
 

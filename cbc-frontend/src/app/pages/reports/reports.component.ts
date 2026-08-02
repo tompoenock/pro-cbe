@@ -9,13 +9,15 @@ import { ClassService } from '../../shared/services/class.service';
 import { StudentService } from '../../shared/services/student.service';
 import { PathwaysService } from '../pathways/pathways.service';
 import { ThemeService } from '../../shared/services/theme.service';
+import { PermissionService, SchoolPermission } from '../../shared/services/permission.service';
 import { forkJoin, of } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
+import { NgxChartsModule, Color, ScaleType } from '@swimlane/ngx-charts';
 
 @Component({
   selector: 'app-reports',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NgxChartsModule],
   templateUrl: './reports.component.html',
   styleUrls: ['./reports.component.scss'],
 })
@@ -36,6 +38,9 @@ export class ReportsComponent implements OnInit {
   isParent = false;
   darkMode = false;
   classes: any[] = [];
+
+  subjectScoresColorScheme: Color = { name: 'subjectScores', selectable: true, group: ScaleType.Ordinal, domain: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#0ea5e9'] };
+  termTrendsColorScheme: Color = { name: 'termTrends', selectable: true, group: ScaleType.Ordinal, domain: ['#06b6d4', '#22c55e', '#f97316', '#a855f7', '#0ea5e9'] };
 
   // Per-pathway report state
   pathways: any[] = [];
@@ -161,6 +166,7 @@ export class ReportsComponent implements OnInit {
     private studentService: StudentService,
     private pathwaysService: PathwaysService,
     private themeService: ThemeService,
+    private permissionService: PermissionService,
   ) {
     const role = this.authService.getUserRole() || localStorage.getItem('role') || sessionStorage.getItem('userRole') || '';
     this.isTeacher = role === 'teacher' || role === 'admin' || role === 'super_admin' ? role === 'teacher' : false;
@@ -471,6 +477,28 @@ export class ReportsComponent implements OnInit {
       error: (err) => {
         this.error = err.error?.message || 'Failed to load pathway report';
         this.pathwayReportLoading = false;
+        console.error('Error loading pathway report:', err);
+      },
+    });
+  }
+
+  viewPathway(pathway: any): void {
+    if (!pathway?._id) return;
+    this.selectedPathwayId = pathway._id;
+    this.onPathwayChange();
+  }
+
+  downloadPathway(pathway: any): void {
+    if (!pathway?._id) return;
+    this.error = null;
+    this.success = null;
+    this.reportsService.getPathwayReport(pathway._id).subscribe({
+      next: (report: any) => {
+        this.pathwayReport = report;
+        this.downloadPathwayReport(pathway);
+      },
+      error: (err) => {
+        this.error = err.error?.message || 'Failed to load pathway report';
         console.error('Error loading pathway report:', err);
       },
     });
@@ -821,8 +849,20 @@ export class ReportsComponent implements OnInit {
     this.viewLoading = false;
   }
 
-  getScoreBarWidth(score: number): string {
-    return `${Math.min(Math.max(score, 0), 100)}%`;
+  getSubjectScoresChartData(): any[] {
+    const scores = this.selectedReport?.performanceSummary?.subjectScores;
+    if (!Array.isArray(scores)) return [];
+    return scores
+      .map((s: any) => ({ name: s.subjectName || 'Unknown', value: Number(s.averageScore) || 0 }))
+      .sort((a: any, b: any) => b.value - a.value);
+  }
+
+  getTermTrendsChartData(): any[] {
+    const trends = this.selectedReport?.performanceSummary?.trends;
+    if (!Array.isArray(trends)) return [];
+    return trends
+      .map((t: any) => ({ name: t.term || 'Unknown', value: Number(t.averageScore) || 0 }))
+      .sort((a: any, b: any) => (a.name || '').localeCompare(b.name || ''));
   }
 
   viewReport(report: any): void {
@@ -1048,7 +1088,7 @@ export class ReportsComponent implements OnInit {
     }
   }
 
-  downloadPathwayReport(): void {
+  downloadPathwayReport(pathway?: any): void {
     try {
       const r = this.pathwayReport;
       if (!r) {
@@ -1056,11 +1096,12 @@ export class ReportsComponent implements OnInit {
         return;
       }
 
-      const pathway = this.getSelectedPathway() || {};
+      const pathwayInfo = pathway || this.getSelectedPathway() || {};
       const filters = r.filters || {};
+
       const bodyLines = [
         [
-          { label: 'Pathway:', value: `${pathway.name || filters.pathwayId || 'N/A'} (${pathway.code || ''})` },
+          { label: 'Pathway:', value: `${pathwayInfo.name || filters.pathwayId || 'N/A'} (${pathwayInfo.code || ''})` },
           { label: 'Generated:', value: r.generatedDate ? new Date(r.generatedDate).toLocaleString() : 'N/A' },
         ],
         [
@@ -1074,7 +1115,7 @@ export class ReportsComponent implements OnInit {
       for (const entry of entries) {
         const st = entry.statistics || {};
         const entryLines = [
-          `Pathway: ${entry.pathway?.name || pathway.name || 'Unknown'}`,
+          `Pathway: ${entry.pathway?.name || pathwayInfo.name || 'Unknown'}`,
           `Total Students: ${st.totalStudents ?? 0}`,
           `Average Score: ${st.averageScore ?? 'N/A'}%`,
           `Average Completion Rate: ${st.averageCompletionRate ?? 'N/A'}%`,
@@ -1091,10 +1132,10 @@ export class ReportsComponent implements OnInit {
             );
           }
         }
-        sections.push({ heading: entry.pathway?.name || pathway.name || 'Pathway Report', content: entryLines });
+        sections.push({ heading: entry.pathway?.name || pathwayInfo.name || 'Pathway Report', content: entryLines });
       }
 
-      const title = `Pathway Report - ${pathway.name || ''}`.trim();
+      const title = `Pathway Report - ${pathwayInfo.name || ''}`.trim();
       this.generatePdf(title, bodyLines, sections);
     } catch (err: any) {
       console.error('Failed to download pathway report:', err);
@@ -1123,6 +1164,22 @@ export class ReportsComponent implements OnInit {
     if (!r) return false;
     if (r === 'super_admin' || r === 'admin') return true;
     return r === role;
+  }
+
+  hasPermission(permission: string): boolean {
+    return this.permissionService.hasPermission(permission);
+  }
+
+  canViewReports(): boolean {
+    return this.isAdmin || this.isTeacher || this.isParent || this.hasPermission(SchoolPermission.VIEW_REPORTS);
+  }
+
+  canExportReports(): boolean {
+    return this.isAdmin || this.isTeacher || this.hasPermission(SchoolPermission.EXPORT_REPORTS);
+  }
+
+  canGenerateReports(): boolean {
+    return this.isAdmin || this.isTeacher || this.isParent || this.hasPermission(SchoolPermission.GENERATE_REPORTS);
   }
 
   getDistributionKeys(obj: any): string[] {

@@ -3,17 +3,17 @@
   <aside
     class="fixed inset-y-0 left-0 z-30 flex flex-col transition-all duration-300 no-print"
     [class]="sidebarOpen
-      ? (darkMode ? 'w-64 bg-slate-800 border-r border-slate-700' : 'w-64 bg-white border-r border-gray-200')
-      : (darkMode ? 'w-16 bg-slate-800 border-r border-slate-700' : 'w-16 bg-white border-r border-gray-200')"
+      ? (darkMode ? 'w-64 bg-green-800 border-r border-green-900' : 'w-64 bg-green-600 border-r border-green-700')
+      : (darkMode ? 'w-16 bg-green-800 border-r border-green-900' : 'w-16 bg-green-600 border-r border-green-700')"
   >
     <!-- Logo -->
-    <div class="flex items-center h-16 px-4" [class]="darkMode ? 'border-b border-slate-700' : 'border-b border-gray-200'">
+    <div class="flex items-center h-16 px-4" [class]="darkMode ? 'border-b border-green-900' : 'border-b border-green-700'">
         <div class="flex items-center gap-3 overflow-hidden">
-        <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
+        <div class="w-8 h-8 rounded-lg bg-green-700 flex items-center justify-center shrink-0">
           <span class="text-white font-bold text-sm">C</span>
         </div>
         @if (sidebarOpen) {
-          <span class="font-bold text-lg whitespace-nowrap" [class]="darkMode ? 'text-white' : 'text-gray-900'">CBE Pathway</span>
+          <span class="font-bold text-lg whitespace-nowrap text-white">CBE Pathway</span>
         }
       </div>
     </div>
@@ -25,7 +25,7 @@
           [routerLink]="item.path"
           routerLinkActive="active-nav"
           class="flex items-center gap-3 mx-2 mb-1 px-3 py-2.5 rounded-lg transition-colors cursor-pointer"
-          [class]="darkMode ? 'hover:bg-slate-700 text-slate-300' : 'hover:bg-gray-100 text-gray-600'"
+          [class]="darkMode ? 'hover:bg-green-700 text-green-100' : 'hover:bg-green-700 text-white'"
           [title]="item.label"
         >
           <span class="material-icon shrink-0 w-5 h-5 flex items-center justify-center text-sm">
@@ -67,11 +67,11 @@
     </nav>
 
     <!-- Sidebar footer -->
-    <div class="p-3" [class]="darkMode ? 'border-t border-slate-700' : 'border-t border-gray-200'">
+    <div class="p-3" [class]="darkMode ? 'border-t border-green-900' : 'border-t border-green-700'">
       <button
         (click)="toggleSidebar()"
         class="w-full flex items-center justify-center p-2 rounded-lg transition-colors"
-        [class]="darkMode ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-gray-100 text-gray-500'"
+        [class]="darkMode ? 'hover:bg-green-700 text-green-100' : 'hover:bg-green-700 text-white'"
       >
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 transition-transform" [class.rotate-180]="!sidebarOpen">
           <path stroke-linecap="round" stroke-linejoin="round" d="M18.75 19.5l-7.5-7.5 7.5-7.5m-6 15L5.25 12l7.5-7.5"/>
@@ -85,13 +85,13 @@
     <!-- Top bar -->
     <header
       class="sticky top-0 z-20 h-16 flex items-center justify-between px-6 no-print"
-      [class]="darkMode ? 'bg-slate-800 border-b border-slate-700' : 'bg-white border-b border-gray-200 shadow-sm'"
+      [class]="darkMode ? 'bg-green-800 border-b border-green-900' : 'bg-green-600 border-b border-green-700 shadow-sm'"
     >
       <div class="flex items-center gap-3">
         <button
           (click)="toggleSidebar()"
           class="lg:hidden p-2 rounded-lg transition-colors"
-          [class]="darkMode ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-gray-100 text-gray-500'"
+          [class]="darkMode ? 'hover:bg-green-700 text-green-100' : 'hover:bg-green-700 text-white'"
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
@@ -106,7 +106,7 @@
         <button
           (click)="toggleTheme()"
           class="p-2 rounded-lg transition-colors"
-          [class]="darkMode ? 'hover:bg-slate-700 text-yellow-400' : 'hover:bg-gray-100 text-gray-500'"
+          [class]="darkMode ? 'hover:bg-green-700 text-yellow-300' : 'hover:bg-green-700 text-white'"
           [title]="darkMode ? 'Switch to light mode' : 'Switch to dark mode'"
         >
           @if (darkMode) {
@@ -124,7 +124,7 @@
         <div class="relative notification-dropdown-container">
           <button (click)="toggleNotificationDropdown()"
                   class="relative p-2 rounded-lg transition-colors"
-                  [class]="darkMode ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-gray-100 text-gray-500'">
+                  [class]="darkMode ? 'hover:bg-green-700 text-green-100' : 'hover:bg-green-700 text-white'">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"/>
             </svg>
@@ -200,14 +200,14 @@
         <!-- User info -->
         <div class="flex items-center gap-3">
           <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium"
-            [class]="darkMode ? 'bg-blue-500' : 'bg-blue-600'"
+            [class]="darkMode ? 'bg-green-500' : 'bg-green-700'"
           >
             {{ user?.username?.charAt(0)?.toUpperCase() }}
           </div>
           @if (sidebarOpen) {
             <div class="hidden sm:block">
-              <p class="text-sm font-medium" [class]="darkMode ? 'text-white' : 'text-gray-700'">{{ user?.username }}</p>
-              <p class="text-xs capitalize" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">{{ user?.role }}</p>
+              <p class="text-sm font-medium" [class]="darkMode ? 'text-white' : 'text-white'">{{ user?.username }}</p>
+              <p class="text-xs capitalize" [class]="darkMode ? 'text-green-200' : 'text-green-100'">{{ user?.role }}</p>
             </div>
           }
         </div>
@@ -215,7 +215,7 @@
         <button
           (click)="logout()"
           class="text-sm px-3 py-1.5 rounded-lg font-medium transition-colors"
-          [class]="darkMode ? 'text-red-400 hover:bg-red-900/30' : 'text-red-600 hover:bg-red-50'"
+          [class]="darkMode ? 'text-red-300 hover:bg-green-700' : 'text-red-100 hover:bg-green-700'"
         >
           Logout
         </button>
