@@ -13,6 +13,10 @@ export class UserService {
     return this.http.get<any[]>(`${this.apiUrl}/users`);
   }
 
+  getPending(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/users`, { params: { isApproved: 'false' } });
+  }
+
   create(data: any): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/admin-register`, data);
   }

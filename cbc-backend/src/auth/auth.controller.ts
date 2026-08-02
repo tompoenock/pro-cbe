@@ -117,8 +117,8 @@ export class AuthController {
   @Roles(Role.Admin, Role.SuperAdmin)
   @Permissions(SchoolPermission.VIEW_USERS)
   @Get('users')
-  async getUsers(@Request() req: any) {
-    return this.authService.findAllUsers(req.user.organizationId);
+  async getUsers(@Request() req: any, @Query('isApproved') isApproved?: string) {
+    return this.authService.findAllUsers(req.user.organizationId, isApproved);
   }
 
   @UseGuards(JwtAuthGuard)

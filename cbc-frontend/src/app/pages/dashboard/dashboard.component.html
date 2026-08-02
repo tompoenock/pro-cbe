@@ -137,12 +137,12 @@
       <ul class="space-y-3">
         <li *ngFor="let a of recentApprovals" class="flex items-center justify-between">
           <div>
-            <div class="font-medium" [class]="darkMode ? 'text-white' : 'text-gray-800'">{{ a.title || a.type || 'Approval' }}</div>
-            <div class="text-xs" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">By: {{ a.requestedBy?.name || a.requestedBy || 'N/A' }}</div>
+            <div class="font-medium" [class]="darkMode ? 'text-white' : 'text-gray-800'">{{ a.username }}</div>
+            <div class="text-xs" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">Pending &middot; {{ a.role }} &middot; {{ a.email }}</div>
           </div>
           <div class="text-xs text-gray-400">{{ a.createdAt | date:'short' }}</div>
         </li>
-        <li *ngIf="recentApprovals.length === 0" class="text-sm text-gray-400">No recent approvals</li>
+        <li *ngIf="recentApprovals.length === 0" class="text-sm text-gray-400">No pending approvals</li>
       </ul>
     </div>
   </div>

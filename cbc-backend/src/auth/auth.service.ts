@@ -318,10 +318,13 @@ export class AuthService {
 
   // ─── FIND ALL USERS ─────────────────────────────────────────
 
-  async findAllUsers(organizationId?: string) {
+  async findAllUsers(organizationId?: string, isApproved?: string) {
     const filter: any = {};
     if (organizationId) {
       filter.organizationId = new Types.ObjectId(organizationId);
+    }
+    if (isApproved === 'true' || isApproved === 'false') {
+      filter.isApproved = isApproved === 'true';
     }
 
     return this.userModel

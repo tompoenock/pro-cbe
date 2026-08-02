@@ -7,11 +7,12 @@ import { ClassService } from '../../shared/services/class.service';
 import { StudentService } from '../../shared/services/student.service';
 import { SubjectService } from '../../shared/services/subject.service';
 import { StaffService } from '../../shared/services/staff.service';
-import { ApprovalService } from '../../shared/services/approval.service';
+import { UserService } from '../../shared/services/user.service';
 import { ParentPortalService } from '../parent-portal/parent-portal.service';
 import { PerformanceService } from '../../shared/services/performance.service';
 import { ReportsService } from '../reports/reports.service';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { PathwaysService } from '../pathways/pathways.service';
 
 @Component({
@@ -42,7 +43,7 @@ export class DashboardComponent implements OnInit {
     private studentService: StudentService,
     private subjectService: SubjectService,
     private staffService: StaffService,
-    private approvalService: ApprovalService,
+    private userService: UserService,
     private pathwaysService: PathwaysService,
     private parentPortalService: ParentPortalService,
     private performanceService: PerformanceService,
@@ -75,21 +76,25 @@ export class DashboardComponent implements OnInit {
     this.studentService.getCount().subscribe({ next: c => (this.stats.students = c), error: () => {} });
     this.subjectService.getCount().subscribe({ next: c => (this.stats.subjects = c), error: () => {} });
     this.staffService.getCount().subscribe({ next: c => (this.stats.staff = c), error: () => {} });
-    this.approvalService.getPending().subscribe({ next: (data: any[]) => (this.stats.pendingApprovals = data.length), error: () => {} });
+
+    // Pending approvals (loaded independently so a failure elsewhere can't zero the count)
+    this.userService.getPending().subscribe({
+      next: (pending: any[]) => {
+        this.stats.pendingApprovals = pending.length;
+        this.recentApprovals = pending.slice(0, 6);
+      },
+      error: () => {},
+    });
 
     // Load richer dashboard data in parallel
     forkJoin({
-      classes: this.classService.getAll(),
-      students: this.studentService.getAll(),
-      approvals: this.approvalService.getAll({ limit: 10 }),
-      pathways: this.pathwaysService.getAllPathways(undefined, 1, 100),
+      classes: this.classService.getAll().pipe(catchError(() => of([]))),
+      students: this.studentService.getAll().pipe(catchError(() => of([]))),
+      pathways: this.pathwaysService.getAllPathways(undefined, 1, 100).pipe(catchError(() => of([]))),
     }).subscribe({
-      next: ({ classes, students, approvals }) => {
+      next: ({ classes, students }) => {
         // Recent students (assume returned sorted by createdAt desc)
         this.recentStudents = students.slice(0, 6);
-
-        // Recent approvals
-        this.recentApprovals = approvals.slice(0, 6);
 
         // Compute class sizes
         const classCounts: Record<string, number> = {};
