@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ClassService } from '../../shared/services/class.service';
 import { StudentService } from '../../shared/services/student.service';
 import { SubjectService } from '../../shared/services/subject.service';
+import { UserService } from '../../shared/services/user.service';
 import { ThemeService } from '../../shared/services/theme.service';
 import { PermissionService, SchoolPermission } from '../../shared/services/permission.service';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog.component';
@@ -19,6 +20,7 @@ import { ActionButtonsComponent, ActionButton, ActionType } from '../../shared/c
 export class ClassesComponent implements OnInit {
   darkMode = false;
   classes: any[] = [];
+  teachers: any[] = [];
   loading = false;
   showModal = false;
   editingId: string | null = null;
@@ -47,12 +49,13 @@ export class ClassesComponent implements OnInit {
   subjectSearchText = '';
   filteredSubjects: any[] = [];
 
-  form = { name: '', section: '', academicYear: new Date().getFullYear().toString(), teacher: '' };
+  form = { name: '', section: '', academicYear: new Date().getFullYear().toString(), teacher: '', classTeacher: '' };
 
   constructor(
     private classService: ClassService,
     private studentService: StudentService,
     private subjectService: SubjectService,
+    private userService: UserService,
     private themeService: ThemeService,
     private permissionService: PermissionService,
   ) {}
@@ -60,6 +63,19 @@ export class ClassesComponent implements OnInit {
   ngOnInit() {
     this.themeService.darkMode$.subscribe((d: boolean) => (this.darkMode = d));
     this.loadClasses();
+    this.loadTeachers();
+  }
+
+  loadTeachers() {
+    this.userService.getTeachers().subscribe({
+      next: (data: any[]) => { this.teachers = data || []; },
+      error: () => { this.teachers = []; },
+    });
+  }
+
+  getTeacherName(id: string): string {
+    const t = this.teachers.find((teacher: any) => teacher._id === id);
+    return t ? (t.username || t.email || 'Teacher') : '—';
   }
 
   loadClasses() {
@@ -79,14 +95,20 @@ export class ClassesComponent implements OnInit {
         return;
       }
       this.editingId = item._id;
-      this.form = { name: item.name, section: item.section || '', academicYear: item.academicYear, teacher: item.teacher?._id || '' };
+      this.form = {
+        name: item.name,
+        section: item.section || '',
+        academicYear: item.academicYear,
+        teacher: item.teacher?._id || '',
+        classTeacher: item.classTeacher?._id || '',
+      };
     } else {
       if (!this.hasPermission(SchoolPermission.CREATE_CLASS)) {
         this.error = 'You do not have permission to create classes.';
         return;
       }
       this.editingId = null;
-      this.form = { name: '', section: '', academicYear: new Date().getFullYear().toString(), teacher: '' };
+      this.form = { name: '', section: '', academicYear: new Date().getFullYear().toString(), teacher: '', classTeacher: '' };
     }
     this.showModal = true;
   }
@@ -108,6 +130,7 @@ export class ClassesComponent implements OnInit {
 
     const data: any = { ...this.form };
     if (!data.teacher) delete data.teacher;
+    if (!data.classTeacher) delete data.classTeacher;
     if (!data.section) delete data.section;
 
     const obs = this.editingId

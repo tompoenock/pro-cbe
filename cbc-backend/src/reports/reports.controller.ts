@@ -27,7 +27,7 @@ export class ReportsController {
    * Generate a student report
    */
   @Post('student')
-  @Roles(Role.Admin, Role.SuperAdmin, Role.Teacher, Role.Parent)
+  @Roles(Role.Admin, Role.SuperAdmin, Role.Teacher, Role.ClassTeacher, Role.Parent)
   generateStudentReport(@Body() dto: CreateStudentReportDto, @Req() req: any) {
     dto = { ...dto };
     return this.reportsService.generateStudentReport(dto, req.user);
@@ -37,7 +37,7 @@ export class ReportsController {
    * Get all student reports
    */
   @Get('student/all')
-  @Roles(Role.Admin, Role.SuperAdmin, Role.Teacher)
+  @Roles(Role.Admin, Role.SuperAdmin, Role.Teacher, Role.ClassTeacher)
   getAllStudentReports(@Query() query: ReportQueryDto) {
     return this.reportsService.getStudentReports(query);
   }
@@ -46,7 +46,7 @@ export class ReportsController {
    * Get reports for a specific student (by student or parent)
    */
   @Get('student/by-student/:studentId')
-  @Roles(Role.Admin, Role.SuperAdmin, Role.Teacher, Role.Parent)
+  @Roles(Role.Admin, Role.SuperAdmin, Role.Teacher, Role.ClassTeacher, Role.Parent)
   getStudentReportsByStudentId(@Param('studentId') studentId: string, @Req() req: any) {
     return this.reportsService.getStudentReportsByStudentId(studentId, req.user);
   }
@@ -55,7 +55,7 @@ export class ReportsController {
    * Get a single student report
    */
   @Get('student/:reportId')
-  @Roles(Role.Admin, Role.SuperAdmin, Role.Teacher, Role.Parent)
+  @Roles(Role.Admin, Role.SuperAdmin, Role.Teacher, Role.ClassTeacher, Role.Parent)
   getStudentReport(@Param('reportId') reportId: string, @Req() req: any) {
     return this.reportsService.getStudentReport(reportId, req.user);
   }
@@ -73,7 +73,7 @@ export class ReportsController {
    * Generate a class summary report (school-level summary for a class)
    */
   @Post('school/class')
-  @Roles(Role.Admin, Role.SuperAdmin, Role.Teacher)
+  @Roles(Role.Admin, Role.SuperAdmin, Role.Teacher, Role.ClassTeacher)
   generateClassSummaryReport(@Body() dto: CreateClassSummaryReportDto, @Req() req: any) {
     return this.reportsService.generateClassSummaryReport(dto, req.user);
   }
@@ -83,7 +83,7 @@ export class ReportsController {
    * Stores a SchoolReport scoped to a single registered pathway
    */
   @Post('school/pathway')
-  @Roles(Role.Admin, Role.SuperAdmin, Role.Teacher)
+  @Roles(Role.Admin, Role.SuperAdmin, Role.Teacher, Role.ClassTeacher)
   generatePathwaySchoolReport(@Body() dto: CreatePathwaySchoolReportDto, @Req() req: any) {
     return this.reportsService.generatePathwaySchoolReport(dto, req.user.id);
   }
@@ -92,7 +92,7 @@ export class ReportsController {
    * Get all school reports
    */
   @Get('school/all')
-  @Roles(Role.Admin, Role.SuperAdmin, Role.Teacher)
+  @Roles(Role.Admin, Role.SuperAdmin, Role.Teacher, Role.ClassTeacher)
   getAllSchoolReports() {
     return this.reportsService.getSchoolReports();
   }
@@ -101,7 +101,7 @@ export class ReportsController {
    * Get a single school report
    */
   @Get('school/:reportId')
-  @Roles(Role.Admin, Role.SuperAdmin, Role.Teacher)
+  @Roles(Role.Admin, Role.SuperAdmin, Role.Teacher, Role.ClassTeacher)
   getSchoolReport(@Param('reportId') reportId: string) {
     return this.reportsService.getSchoolReport(reportId);
   }
@@ -132,7 +132,7 @@ export class ReportsController {
    * Route: GET /api/reports/pathway?classId=&pathwayId=&academicYear=&term=&limit=&page=
    */
   @Get('pathway/report')
-  @Roles(Role.Admin, Role.SuperAdmin, Role.Teacher)
+  @Roles(Role.Admin, Role.SuperAdmin, Role.Teacher, Role.ClassTeacher)
   getPathwayReport(@Query() query: PathwayReportQueryDto) {
     return this.reportsService.getPathwayReport(query);
   }
@@ -143,7 +143,7 @@ export class ReportsController {
    * Route: GET /api/reports/pathway/class/:classId?academicYear=&term=&limit=&page=
    */
   @Get('pathway/class/:classId')
-  @Roles(Role.Admin, Role.SuperAdmin, Role.Teacher)
+  @Roles(Role.Admin, Role.SuperAdmin, Role.Teacher, Role.ClassTeacher)
   getClassPathwayReport(
     @Param('classId') classId: string,
     @Query() query: ClassPathwayReportQueryDto,
@@ -160,7 +160,7 @@ export class ReportsController {
    * Route: GET /api/reports/pathway/student/:studentId/:pathwayId?academicYear=
    */
   @Get('pathway/student/:studentId/:pathwayId')
-  @Roles(Role.Admin, Role.SuperAdmin, Role.Teacher)
+  @Roles(Role.Admin, Role.SuperAdmin, Role.Teacher, Role.ClassTeacher)
   getStudentPathwayProgress(
     @Param('studentId') studentId: string,
     @Param('pathwayId') pathwayId: string,

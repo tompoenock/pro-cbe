@@ -17,6 +17,9 @@ export class Class {
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: false })
   teacher?: MongooseSchema.Types.ObjectId;
 
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: false })
+  classTeacher?: MongooseSchema.Types.ObjectId;
+
   @Prop({ default: true })
   isActive!: boolean;
 

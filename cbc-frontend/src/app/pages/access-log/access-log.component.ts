@@ -66,6 +66,7 @@ export class AccessLogComponent implements OnInit {
       case 'super_admin': return `${base} bg-purple-100 text-purple-700`;
       case 'admin': return `${base} bg-blue-100 text-blue-700`;
       case 'teacher': return `${base} bg-amber-100 text-amber-700`;
+      case 'class_teacher': return `${base} bg-orange-100 text-orange-700`;
       case 'parent': return `${base} bg-teal-100 text-teal-700`;
       case 'student': return `${base} bg-pink-100 text-pink-700`;
       default: return `${base} bg-gray-100 text-gray-700`;

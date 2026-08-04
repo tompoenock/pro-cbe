@@ -7,6 +7,7 @@ import { SubjectService } from '../../shared/services/subject.service';
 import { StudentService } from '../../shared/services/student.service';
 import { GradingService } from '../../shared/services/grading.service';
 import { ThemeService } from '../../shared/services/theme.service';
+import { AuthService } from '../../authentication/core/auth/auth.service';
 import { ActionButtonsComponent, ActionType } from '../../shared/components/action-buttons/action-buttons.component';
 import { DEFAULT_GRADES, GERMAN_FALLBACK_GRADES } from '../../shared/constants/grading.constants';
 import * as XLSX from 'xlsx';
@@ -48,7 +49,19 @@ export class PerformanceComponent implements OnInit {
   terms = ['Term 1', 'Term 2', 'Term 3'];
   examTypes = ['CAT 1', 'CAT 2', 'Mid-Term', 'End-Term', 'Final'];
 
-  bulkScores: { studentId: string; studentName: string; admNo: string; score: number | null }[] = [];
+  bulkScores: { studentId: string; studentName: string; admNo: string; score: number | null; status?: string }[] = [];
+
+  currentUser: any = null;
+  workflowLoading = false;
+  workflowOverview: any = null;
+
+  readonly WORKFLOW_STATUS = {
+    DRAFT: 'draft',
+    PENDING_CLASS_TEACHER: 'pending_class_teacher',
+    PENDING_ADMIN: 'pending_admin',
+    APPROVED: 'approved',
+    RETURNED: 'returned',
+  };
 
   constructor(
     private performanceService: PerformanceService,
@@ -57,10 +70,12 @@ export class PerformanceComponent implements OnInit {
     private studentService: StudentService,
     private gradingService: GradingService,
     private themeService: ThemeService,
+    private authService: AuthService,
   ) {}
 
   ngOnInit() {
     this.themeService.darkMode$.subscribe((d: boolean) => (this.darkMode = d));
+    this.currentUser = this.authService.getUser();
     this.classService.getAll().subscribe({ next: (c: any) => (this.classes = c) });
     this.subjectService.getAll().subscribe({ next: (s: any) => (this.subjects = s) });
     // Load default grade template from backend
@@ -93,6 +108,8 @@ export class PerformanceComponent implements OnInit {
               }
             }
           });
+          // Load workflow overview
+          this.loadWorkflowOverview();
           // Load performances for view mode
           if (this.mode === 'view') {
             this.loadPerformances();
@@ -106,6 +123,7 @@ export class PerformanceComponent implements OnInit {
   onSubjectChange() {
     if (this.filters.classId && this.filters.subjectId) {
       this.loading = true;
+      this.loadWorkflowOverview();
       // Refresh view mode performances for the selected subject
       if (this.mode === 'view') {
         this.loadPerformances();
@@ -143,10 +161,12 @@ export class PerformanceComponent implements OnInit {
                   const existingRecord = this.bulkScores.find(b => b.studentId === performanceStudentId);
                   if (existingRecord) {
                     existingRecord.score = performance.score;
+                    if (performance.status) existingRecord.status = performance.status;
                   }
                 }
               }
               this.loading = false;
+              this.applyWorkflowStatusToBulkScores();
             },
             error: () => { this.loading = false; }
           });
@@ -183,7 +203,10 @@ export class PerformanceComponent implements OnInit {
         if (this.mode === 'bulk' && data.length > 0) {
           for (const p of data) {
             const existing = this.bulkScores.find(b => b.studentId === (p.studentId as any)?._id);
-            if (existing) existing.score = p.score;
+            if (existing) {
+              existing.score = p.score;
+              if (p.status) existing.status = p.status;
+            }
           }
         }
       },
@@ -202,17 +225,227 @@ export class PerformanceComponent implements OnInit {
     }
     this.error = '';
     this.mode = 'bulk';
+    this.loadWorkflowOverview();
     this.onSubjectChange();
   }
 
   switchToView() {
     this.mode = 'view';
     this.loadPerformances();
-  }
-
-  switchToOverall() {
+  }  switchToOverall() {
     this.mode = 'overall';
     this.loadOverallPerformance();
+  }
+
+  get currentUserRole(): string {
+    return this.currentUser?.role || this.authService.getUserRole() || '';
+  }
+
+  get isTeacher(): boolean {
+    return this.currentUserRole === 'teacher';
+  }
+
+  get isClassTeacher(): boolean {
+    return this.currentUserRole === 'class_teacher';
+  }
+
+  get isAdminUser(): boolean {
+    return this.currentUserRole === 'admin' || this.currentUserRole === 'super_admin';
+  }
+
+  get isSuperAdmin(): boolean {
+    return this.currentUserRole === 'super_admin';
+  }
+
+  loadWorkflowOverview() {
+    if (!this.filters.classId) return;
+    this.workflowLoading = true;
+    this.performanceService.getWorkflowOverview({
+      classId: this.filters.classId,
+      subjectId: this.filters.subjectId,
+      academicYear: this.filters.academicYear,
+      term: this.filters.term,
+      examType: this.filters.examType,
+    }).subscribe({
+      next: (data: any) => {
+        this.workflowOverview = data;
+        this.workflowLoading = false;
+        this.applyWorkflowStatusToBulkScores();
+      },
+      error: () => {
+        this.workflowLoading = false;
+      },
+    });
+  }
+
+  get currentSubjectOverview(): any {
+    if (!this.workflowOverview || !this.filters.subjectId) return null;
+    return this.workflowOverview.subjects?.find(
+      (s: any) => s.subjectId === this.filters.subjectId
+    ) || null;
+  }
+
+  get currentSubjectStatus(): string {
+    const subject = this.workflowOverview?.subjects?.find(
+      (s: any) => s.subjectId === this.filters.subjectId
+    );
+    if (!subject || subject.recordCount === 0) return this.WORKFLOW_STATUS.DRAFT;
+    return subject.status || this.WORKFLOW_STATUS.DRAFT;
+  }
+
+  applyWorkflowStatusToBulkScores() {
+    if (!this.workflowOverview || this.bulkScores.length === 0) return;
+    const subject = this.currentSubjectOverview;
+    if (!subject) return;
+    this.bulkScores.forEach((entry) => {
+      entry.status = subject.status;
+    });
+  }
+
+  canEditBulkScores(): boolean {
+    if (this.isAdminUser) return true;
+    const status = this.currentSubjectStatus;
+    if (this.isClassTeacher) {
+      return (
+        status === this.WORKFLOW_STATUS.DRAFT ||
+        status === this.WORKFLOW_STATUS.RETURNED ||
+        status === this.WORKFLOW_STATUS.PENDING_CLASS_TEACHER
+      );
+    }
+    return status === this.WORKFLOW_STATUS.DRAFT || status === this.WORKFLOW_STATUS.RETURNED;
+  }
+
+  getStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      draft: 'Draft',
+      pending_class_teacher: 'Pending Class Teacher',
+      pending_admin: 'Pending Admin Approval',
+      approved: 'Approved',
+      returned: 'Returned',
+    };
+    return labels[status] || 'Draft';
+  }
+
+  getStatusClass(status: string): string {
+    const classes: Record<string, string> = {
+      draft: 'bg-gray-500/10 text-gray-600 dark:text-gray-300',
+      pending_class_teacher: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+      pending_admin: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
+      approved: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+      returned: 'bg-red-500/10 text-red-600 dark:text-red-400',
+    };
+    return classes[status] || classes['draft'];
+  }
+
+  buildWorkflowFilter() {
+    return {
+      classId: this.filters.classId,
+      subjectId: this.filters.subjectId,
+      academicYear: this.filters.academicYear,
+      term: this.filters.term,
+      examType: this.filters.examType,
+    };
+  }
+
+  submitToClassTeacher() {
+    if (!this.filters.classId) {
+      this.error = 'Select a class first';
+      return;
+    }
+    if (!this.filters.subjectId) {
+      this.error = 'Select a subject first';
+      return;
+    }
+    if (!confirm('Submit these marks to the class teacher for review? They will be locked for further edits.')) return;
+    this.saving = true;
+    this.performanceService.submitToClassTeacher(this.buildWorkflowFilter()).subscribe({
+      next: (result: any) => {
+        this.saving = false;
+        this.success = `Submitted ${result.count} record(s) to the class teacher.`;
+        setTimeout(() => (this.success = ''), 4000);
+        this.refreshAfterWorkflowAction();
+      },
+      error: (err: any) => {
+        this.saving = false;
+        this.error = err.error?.message || 'Failed to submit marks';
+      },
+    });
+  }
+
+  submitToAdmin() {
+    if (!this.filters.classId) {
+      this.error = 'Select a class first';
+      return;
+    }
+    if (!confirm('Submit the reviewed marks to the admin for final approval?')) return;
+    this.saving = true;
+    this.performanceService.submitToAdmin(this.buildWorkflowFilter()).subscribe({
+      next: (result: any) => {
+        this.saving = false;
+        this.success = `Submitted ${result.count} record(s) to the admin.`;
+        setTimeout(() => (this.success = ''), 4000);
+        this.refreshAfterWorkflowAction();
+      },
+      error: (err: any) => {
+        this.saving = false;
+        this.error = err.error?.message || 'Failed to submit marks';
+      },
+    });
+  }
+
+  approveMarks() {
+    if (!this.filters.classId) {
+      this.error = 'Select a class first';
+      return;
+    }
+    if (!confirm('Approve these marks? They will be finalized and locked from further edits.')) return;
+    this.saving = true;
+    this.performanceService.approve(this.buildWorkflowFilter()).subscribe({
+      next: (result: any) => {
+        this.saving = false;
+        this.success = `Approved ${result.count} record(s).`;
+        setTimeout(() => (this.success = ''), 4000);
+        this.refreshAfterWorkflowAction();
+      },
+      error: (err: any) => {
+        this.saving = false;
+        this.error = err.error?.message || 'Failed to approve marks';
+      },
+    });
+  }
+
+  returnMarks() {
+    if (!this.filters.classId) {
+      this.error = 'Select a class first';
+      return;
+    }
+    const reason = prompt('Reason for returning the marks (optional):');
+    if (reason === null) return;
+    this.saving = true;
+    this.performanceService.returnMarks({
+      ...this.buildWorkflowFilter(),
+      reason: reason || undefined,
+    }).subscribe({
+      next: (result: any) => {
+        this.saving = false;
+        this.success = `Returned ${result.count} record(s) for correction.`;
+        setTimeout(() => (this.success = ''), 4000);
+        this.refreshAfterWorkflowAction();
+      },
+      error: (err: any) => {
+        this.saving = false;
+        this.error = err.error?.message || 'Failed to return marks';
+      },
+    });
+  }
+
+  refreshAfterWorkflowAction() {
+    this.loadWorkflowOverview();
+    if (this.mode === 'bulk') {
+      this.onSubjectChange();
+    } else {
+      this.loadPerformances();
+    }
   }
 
   getSubjectName(subjectId: string): string {
@@ -408,6 +641,10 @@ export class PerformanceComponent implements OnInit {
   saveBulkScores() {
     if (!this.filters.classId || !this.filters.subjectId) {
       this.error = 'Select a class and subject';
+      return;
+    }
+    if (!this.canEditBulkScores()) {
+      this.error = 'These marks are already submitted and locked. Return them first to make changes.';
       return;
     }
     const scores = this.bulkScores

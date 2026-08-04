@@ -13,6 +13,7 @@ import { StaffModule } from './staff/staff.module';
 import { LeaveModule } from './leave/leave.module';
 import { PathwaysModule } from './pathways/pathways.module';
 import { ReportsModule } from './reports/reports.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 
 @Module({
@@ -36,6 +37,7 @@ import { ReportsModule } from './reports/reports.module';
     // CBE Pathway modules
     PathwaysModule,
     ReportsModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

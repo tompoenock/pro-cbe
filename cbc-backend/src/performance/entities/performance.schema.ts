@@ -35,6 +35,35 @@ export class Performance {
   @Prop({ required: false, default: 0 })
   points?: number;
 
+  @Prop({
+    required: false,
+    enum: ['draft', 'pending_class_teacher', 'pending_admin', 'approved', 'returned'],
+    default: 'draft',
+    index: true,
+  })
+  status?: string;
+
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: false })
+  enteredBy?: MongooseSchema.Types.ObjectId;
+
+  @Prop()
+  submittedToClassTeacherAt?: Date;
+
+  @Prop()
+  submittedToAdminAt?: Date;
+
+  @Prop()
+  approvedAt?: Date;
+
+  @Prop()
+  reviewedAt?: Date;
+
+  @Prop()
+  returnedAt?: Date;
+
+  @Prop({ required: false })
+  returnedReason?: string;
+
   @Prop({ default: false })
   isDeleted?: boolean;
 

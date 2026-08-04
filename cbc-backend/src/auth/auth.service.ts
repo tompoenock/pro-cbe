@@ -97,7 +97,7 @@ export class AuthService {
 
     // Assign default teacher permissions when creating a teacher user
     const createdUserId = newUser._id.toString();
-    if ((role || Role.User) === Role.Teacher) {
+    if ((role || Role.User) === Role.Teacher || (role || Role.User) === Role.ClassTeacher) {
       const defaultTeacherPermissions = [
         SchoolPermission.VIEW_DASHBOARD,
         SchoolPermission.VIEW_SUBJECTS,
@@ -334,7 +334,7 @@ export class AuthService {
   }
 
   async findTeachers(organizationId?: string) {
-    const filter: any = { role: Role.Teacher };
+    const filter: any = { role: { $in: [Role.Teacher, Role.ClassTeacher] } };
     if (organizationId) filter.organizationId = new Types.ObjectId(organizationId);
 
     return this.userModel

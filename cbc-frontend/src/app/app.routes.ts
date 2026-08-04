@@ -18,6 +18,7 @@ import { PathwaysComponent } from './pages/pathways/pathways.component';
 import { ReportsComponent } from './pages/reports/reports.component';
 import { ParentPortalComponent } from './pages/parent-portal/parent-portal.component';
 import { UsersComponent } from './pages/users/users.component';
+import { NotificationsComponent } from './pages/notifications/notifications.component';
 
 export const routes: Routes = [
   // Public routes
@@ -33,7 +34,7 @@ export const routes: Routes = [
     path: 'app',
     component: LayoutComponent,
     canActivate: [AuthGuard],
-    data: { roles: ['user', 'teacher', 'admin', 'super_admin', 'parent'] },
+    data: { roles: ['user', 'teacher', 'class_teacher', 'admin', 'super_admin', 'parent'] },
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', component: DashboardComponent },
@@ -45,6 +46,7 @@ export const routes: Routes = [
       { path: 'students', component: StudentsComponent },
       { path: 'grading', component: GradingComponent },
       { path: 'performance', component: PerformanceComponent },
+      { path: 'notifications', component: NotificationsComponent },
 
       // CBE Pathway modules
       { path: 'pathways', component: PathwaysComponent },

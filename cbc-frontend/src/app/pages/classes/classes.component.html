@@ -29,6 +29,7 @@
             <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">Section</th>
             <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">Academic Year</th>
             <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">Teacher</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">Class Teacher</th>
             <th class="text-right px-4 py-3 text-xs font-semibold uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
@@ -39,6 +40,18 @@
               <td class="px-4 py-3 text-sm" [class]="darkMode ? 'text-slate-300' : 'text-gray-600'">{{ cls.section || '-' }}</td>
               <td class="px-4 py-3 text-sm" [class]="darkMode ? 'text-slate-300' : 'text-gray-600'">{{ cls.academicYear }}</td>
               <td class="px-4 py-3 text-sm" [class]="darkMode ? 'text-slate-300' : 'text-gray-600'">{{ cls.teacher?.username || '-' }}</td>
+              <td class="px-4 py-3 text-sm">
+                <span class="inline-flex items-center gap-1.5">
+                  @if (cls.classTeacher) {
+                    <span class="px-2 py-0.5 rounded-full text-xs font-medium"
+                      [class]="darkMode ? 'bg-emerald-900/50 text-emerald-300' : 'bg-emerald-100 text-emerald-800'">
+                      {{ cls.classTeacher.username || cls.classTeacher.firstName + ' ' + cls.classTeacher.lastName }}
+                    </span>
+                  } @else {
+                    <span class="text-xs" [class]="darkMode ? 'text-slate-500' : 'text-gray-400'">Not assigned</span>
+                  }
+                </span>
+              </td>
               <td class="px-4 py-3 text-right">
                 <app-action-buttons
                   [actions]="getClassActions()"
@@ -86,6 +99,21 @@
               class="w-full px-3 py-2 rounded-lg border text-sm outline-none transition-colors"
               [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-400 focus:border-blue-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-500'"
             />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" [class]="darkMode ? 'text-slate-300' : 'text-gray-700'">Class Teacher</label>
+            <p class="text-xs mb-1" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">
+              The class teacher reviews and approves all marks entered by subject teachers before they go to the admin.
+            </p>
+            <select [(ngModel)]="form.classTeacher"
+              class="w-full px-3 py-2 rounded-lg border text-sm outline-none transition-colors"
+              [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white focus:border-blue-500' : 'bg-white border-gray-300 text-gray-900 focus:border-blue-500'"
+            >
+              <option value="">-- Not assigned --</option>
+              @for (t of teachers; track t._id) {
+                <option [value]="t._id">{{ t.username || t.email }}</option>
+              }
+            </select>
           </div>
         </div>
 

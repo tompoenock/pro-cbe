@@ -1,4 +1,4 @@
-<div class="reports-container">
+﻿<div class="reports-container">
   <div *ngIf="loading" class="page-spinner">
     <div class="spinner"></div>
   </div>
@@ -151,7 +151,7 @@
             <div class="student-result-info">
               <strong>{{ s.firstName }} {{ s.lastName }}</strong>
               <span>
-                {{ s.admissionNumber }}<ng-container *ngIf="s.classId?.name"> · {{ s.classId.name }}</ng-container>
+                {{ s.admissionNumber }}<ng-container *ngIf="s.classId?.name"> Â· {{ s.classId.name }}</ng-container>
               </span>
             </div>
             <button
@@ -176,7 +176,7 @@
             <h3>{{ report.studentId?.firstName }} {{ report.studentId?.lastName }}</h3>
             <span class="report-meta">
               {{ report.generatedDate | date: 'mediumDate' }}
-              <ng-container *ngIf="report.reportPeriod">· {{ report.reportPeriod.startDate | date: 'shortDate' }} - {{ report.reportPeriod.endDate | date: 'shortDate' }}</ng-container>
+              <ng-container *ngIf="report.reportPeriod">Â· {{ report.reportPeriod.startDate | date: 'shortDate' }} - {{ report.reportPeriod.endDate | date: 'shortDate' }}</ng-container>
             </span>
           </div>
           <span class="report-type-badge" [class]="'type-' + report.reportType">{{ report.reportType }}</span>
@@ -318,7 +318,7 @@
       <div *ngIf="!pathwayReportLoading && pathwayReport" class="pathway-report">
         <div class="report-card">
           <div class="report-card-top">
-            <div class="report-avatar school">🎓</div>
+            <div class="report-avatar school">ðŸŽ“</div>
             <div class="report-identity">
               <h3>{{ getSelectedPathway()?.name }}</h3>
               <span class="report-meta">Generated {{ pathwayReport.generatedDate | date: 'mediumDate' }}</span>
@@ -461,7 +461,7 @@
     <div class="modal-content modal-wide" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>Generate New Report</h2>
-        <button class="modal-close" (click)="closeGenerateModal()">×</button>
+        <button class="modal-close" (click)="closeGenerateModal()">Ã—</button>
       </div>
 
       <div class="modal-body">
@@ -526,7 +526,7 @@
     <div class="modal-content modal-wide" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>Report Details</h2>
-        <button class="modal-close" (click)="closeViewModal()">×</button>
+        <button class="modal-close" (click)="closeViewModal()">Ã—</button>
       </div>
 
       <div class="modal-body">
@@ -637,14 +637,34 @@
                 [xAxisLabel]="'Subject'"
                 [yAxisLabel]="'Average Score'"
                 [yScaleMax]="100"
-                [gradient]="false"
+                [gradient]="true"
                 [legend]="false"
                 [roundEdges]="true"
                 [showDataLabel]="true"
                 [showGridLines]="true"
-                [barPadding]="8"
+                [barPadding]="12"
                 [animations]="true">
               </ngx-charts-bar-vertical>
+            </div>
+
+            <h4 style="margin-top: 20px;">Marks (out of 100)</h4>
+            <div class="chart-wrapper" style="height: 300px; margin-top: 12px;">
+              <ngx-charts-line-chart
+                [results]="getSubjectMarksLineChartData()"
+                [scheme]="marksLineColorScheme"
+                [xAxis]="true"
+                [yAxis]="true"
+                [showXAxisLabel]="true"
+                [showYAxisLabel]="true"
+                [xAxisLabel]="'Subject'"
+                [yAxisLabel]="'Marks'"
+                [yScaleMax]="100"
+                [gradient]="true"
+                [legend]="false"
+                [showGridLines]="true"
+                [roundDomains]="false"
+                [animations]="true">
+              </ngx-charts-line-chart>
             </div>
           </div>
           <div *ngIf="selectedReport.performanceSummary.trends?.length" class="detail-block">
@@ -660,12 +680,12 @@
                 [xAxisLabel]="'Term'"
                 [yAxisLabel]="'Average Score'"
                 [yScaleMax]="100"
-                [gradient]="false"
+                [gradient]="true"
                 [legend]="false"
                 [roundEdges]="true"
                 [showDataLabel]="true"
                 [showGridLines]="true"
-                [barPadding]="8"
+                [barPadding]="12"
                 [animations]="true">
               </ngx-charts-bar-vertical>
             </div>

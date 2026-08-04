@@ -15,6 +15,10 @@ export class CreateClassDto {
   @IsOptional()
   teacher?: string;
 
+  @IsMongoId()
+  @IsOptional()
+  classTeacher?: string;
+
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;

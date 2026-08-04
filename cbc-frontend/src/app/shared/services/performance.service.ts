@@ -48,4 +48,28 @@ export class PerformanceService {
   getStats(): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/stats`);
   }
+
+  getWorkflowOverview(filters: any = {}): Observable<any> {
+    const params: any = {};
+    Object.keys(filters).forEach(key => {
+      if (filters[key]) params[key] = filters[key];
+    });
+    return this.http.get<any>(`${this.apiUrl}/workflow-overview`, { params });
+  }
+
+  submitToClassTeacher(data: any): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/submit/class-teacher`, data);
+  }
+
+  submitToAdmin(data: any): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/submit/admin`, data);
+  }
+
+  approve(data: any): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/approve`, data);
+  }
+
+  returnMarks(data: any): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/return`, data);
+  }
 }

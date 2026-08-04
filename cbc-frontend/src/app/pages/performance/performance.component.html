@@ -81,6 +81,29 @@
   <!-- View Records Mode -->
   @if (mode === 'view') {
     <div class="space-y-4">
+      <!-- Workflow Overview -->
+      @if (workflowOverview?.subjects?.length) {
+        <div class="rounded-lg border p-4" [class]="darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200 shadow-sm'">
+          <h3 class="text-sm font-semibold mb-3" [class]="darkMode ? 'text-slate-300' : 'text-gray-700'">
+            📋 Submission Workflow Status
+            <span class="text-xs font-normal ml-2" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">
+              {{ filters.term }} | {{ filters.examType }} | {{ filters.academicYear }}
+            </span>
+          </h3>
+          <div class="flex flex-wrap gap-2">
+            @for (subject of workflowOverview.subjects; track subject.subjectId) {
+              <div class="flex items-center gap-2 px-3 py-2 rounded-lg border"
+                [class]="darkMode ? 'bg-slate-700/40 border-slate-600' : 'bg-slate-50 border-gray-200'">
+                <span class="text-sm font-semibold" [class]="darkMode ? 'text-slate-200' : 'text-gray-800'">{{ subject.subjectName }}</span>
+                <span class="text-xs px-2 py-0.5 rounded-full font-semibold" [class]="getStatusClass(subject.status)">
+                  {{ getStatusLabel(subject.status) }}
+                </span>
+                <span class="text-xs" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">{{ subject.recordCount }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      }
       @if (loading) {
         <div class="p-12 text-center" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">
           <div class="inline-block mb-2">
@@ -247,6 +270,65 @@
             Term: {{ filters.term }} | Exam: {{ filters.examType }} | Year: {{ filters.academicYear }}
           </p>
         </div>
+
+        <!-- Workflow Status & Actions -->
+        <div class="mb-4 rounded-lg border p-4"
+          [class]="darkMode ? 'bg-slate-700/40 border-slate-600' : 'bg-slate-50 border-gray-200'">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div class="flex items-center gap-3 flex-wrap">
+              <span class="text-xs font-semibold uppercase tracking-wide" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">
+                Workflow Status
+              </span>
+              @if (workflowLoading) {
+                <span class="text-xs px-3 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400">Loading...</span>
+              } @else {
+                <span class="text-xs px-3 py-1 rounded-full font-semibold"
+                  [class]="getStatusClass(currentSubjectStatus)">
+                  {{ getStatusLabel(currentSubjectStatus) }}
+                </span>
+              }
+              @if (currentSubjectOverview?.recordCount) {
+                <span class="text-xs" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">
+                  {{ currentSubjectOverview.recordCount }} record(s)
+                </span>
+              }
+            </div>
+            <div class="flex flex-wrap gap-2">
+              @if (isTeacher) {
+                <button (click)="submitToClassTeacher()" [disabled]="saving || !canEditBulkScores() || currentSubjectStatus === 'pending_class_teacher' || currentSubjectStatus === 'pending_admin' || currentSubjectStatus === 'approved'"
+                  class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-40 transition-colors">
+                  {{ saving ? 'Submitting...' : 'Submit to Class Teacher' }}
+                </button>
+              }
+              @if (isClassTeacher) {
+                <button (click)="submitToAdmin()" [disabled]="saving || currentSubjectStatus !== 'pending_class_teacher'"
+                  class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-40 transition-colors">
+                  {{ saving ? 'Submitting...' : 'Submit to Admin' }}
+                </button>
+                <button (click)="returnMarks()" [disabled]="saving || (currentSubjectStatus !== 'pending_class_teacher' && currentSubjectStatus !== 'pending_admin')"
+                  class="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 disabled:opacity-40 transition-colors">
+                  Return for Correction
+                </button>
+              }
+              @if (isAdminUser) {
+                <button (click)="approveMarks()" [disabled]="saving || currentSubjectStatus !== 'pending_admin'"
+                  class="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 disabled:opacity-40 transition-colors">
+                  {{ saving ? 'Approving...' : 'Approve Marks' }}
+                </button>
+                <button (click)="returnMarks()" [disabled]="saving || (currentSubjectStatus !== 'pending_admin' && currentSubjectStatus !== 'pending_class_teacher')"
+                  class="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 disabled:opacity-40 transition-colors">
+                  Return for Correction
+                </button>
+              }
+            </div>
+          </div>
+          @if (!canEditBulkScores() && !isSuperAdmin) {
+            <p class="text-xs mt-3" [class]="darkMode ? 'text-amber-400' : 'text-amber-600'">
+              These marks have been submitted and are locked. Use the actions above to return or advance them.
+            </p>
+          }
+        </div>
+
         <div class="divide-y" [class]="darkMode ? 'divide-slate-700' : 'divide-gray-100'">
           @for (entry of bulkScores; track entry.studentId; let i = $index) {
             <div class="p-4 flex items-center justify-between hover:bg-opacity-50 transition-colors"
@@ -269,8 +351,15 @@
               </div>
               <div class="flex items-center gap-3">
                 <input [(ngModel)]="entry.score" type="number" min="0" max="100" placeholder="Score"
-                  class="w-24 px-3 py-2 rounded-lg border text-sm outline-none text-center font-semibold"
+                  [disabled]="!canEditBulkScores()"
+                  class="w-24 px-3 py-2 rounded-lg border text-sm outline-none text-center font-semibold disabled:opacity-50"
                   [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-gray-300 text-gray-900'" />
+                @if (entry.status && entry.status !== 'draft' && entry.status !== 'returned' && !isSuperAdmin) {
+                  <span class="text-xs px-2 py-1 rounded-full font-semibold"
+                    [class]="getStatusClass(entry.status)">
+                    {{ getStatusLabel(entry.status) }}
+                  </span>
+                }
                 <div class="text-xs text-slate-500" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">
                   Enter the student's score between 0 and 100.
                 </div>

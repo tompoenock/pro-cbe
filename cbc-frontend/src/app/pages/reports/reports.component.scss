@@ -441,9 +441,11 @@
 }
 
 .chart-wrapper {
-  border-radius: 18px;
-  background: #0e1726;
-  padding: 14px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #f8fafc, #eef2f7);
+  border: 1px solid #e2e8f0;
+  padding: 16px 12px 10px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
 }
 
 .chart-wrapper ngx-charts-bar-vertical {
@@ -452,31 +454,63 @@
 
 .chart-wrapper .ngx-charts text,
 .chart-wrapper .ngx-charts g text {
-  fill: #cbd5e1;
+  fill: #475569;
 }
 
 .chart-wrapper .ngx-charts .axis path,
 .chart-wrapper .ngx-charts .axis line,
 .chart-wrapper .ngx-charts .gridline line {
-  stroke: rgba(255, 255, 255, 0.12);
+  stroke: rgba(100, 116, 139, 0.25);
 }
 
 .chart-wrapper .ngx-charts .bar {
-  opacity: 0.92;
+  opacity: 0.95;
+  filter: drop-shadow(0 3px 4px rgba(15, 23, 42, 0.12));
 }
 
 .chart-wrapper .ngx-charts .bar-label {
-  fill: #f8fafc;
+  fill: #0f172a;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .chart-wrapper .ngx-charts .x.axis text {
   font-size: 12px;
+  fill: #334155;
 }
 
 .chart-wrapper .ngx-charts .y.axis text {
   font-size: 12px;
+  fill: #64748b;
+}
+
+.chart-wrapper .ngx-charts .x.axis .tick text {
+  font-weight: 600;
+}
+
+.chart-wrapper .ngx-charts .axis-label {
+  fill: #334155;
+  font-weight: 600;
+}
+
+.chart-wrapper ngx-charts-line-chart .ngx-charts .line-series .line {
+  stroke-width: 3px;
+}
+
+.chart-wrapper ngx-charts-line-chart .ngx-charts .line-series .line-dots circle {
+  fill: #2563eb;
+  stroke: #ffffff;
+  stroke-width: 2px;
+  filter: drop-shadow(0 2px 3px rgba(15, 23, 42, 0.25));
+}
+
+.chart-wrapper ngx-charts-line-chart .ngx-charts .line-series .line-dots.hidden {
+  display: none;
+}
+
+.chart-wrapper ngx-charts-line-chart .ngx-charts .line-highlight path {
+  stroke: rgba(37, 99, 235, 0.2);
+  stroke-width: 1.5px;
 }
 
 .score-bar {

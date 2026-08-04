@@ -1,9 +1,11 @@
-import { Component, OnInit, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../authentication/core/auth/auth.service';
 import { ThemeService } from '../../shared/services/theme.service';
 import { PermissionService } from '../../shared/services/permission.service';
+import { NotificationService } from '../../shared/services/notification.service';
+import { interval, Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-layout',
@@ -12,7 +14,7 @@ import { PermissionService } from '../../shared/services/permission.service';
   templateUrl: './layout.component.html',
   styleUrls: ['./layout.component.css'],
 })
-export class LayoutComponent implements OnInit {
+export class LayoutComponent implements OnInit, OnDestroy {
   user: any;
   sidebarOpen = true;
   darkMode = false;
@@ -24,6 +26,7 @@ export class LayoutComponent implements OnInit {
   maintenanceStatus: any = null;
   userRole = '';
   currentPermissions = new Set<string>();
+  private notificationsSub: Subscription | null = null;
 
   // Each nav item may optionally declare a required permission key from SchoolPermission
   allNavItems = [
@@ -88,6 +91,7 @@ export class LayoutComponent implements OnInit {
     private authService: AuthService,
     private themeService: ThemeService,
     private permissionService: PermissionService,
+    private notificationService: NotificationService,
   ) {}
 
   ngOnInit() {
@@ -98,6 +102,24 @@ export class LayoutComponent implements OnInit {
     // load and subscribe to permission updates so the sidebar reacts in real-time
     this.permissionService.currentPermissions$.subscribe(perms => {
       this.currentPermissions = new Set(perms || []);
+    });
+    this.loadNotifications();
+    // Poll for new notifications every 30 seconds
+    this.notificationsSub = interval(30000).subscribe(() => this.loadNotifications());
+  }
+
+  ngOnDestroy() {
+    this.notificationsSub?.unsubscribe();
+  }
+
+  loadNotifications() {
+    this.notificationService.getUnreadCount().subscribe({
+      next: (count: number) => (this.unreadCount = count),
+      error: () => {},
+    });
+    this.notificationService.getAll(20).subscribe({
+      next: (notifications: any[]) => (this.recentNotifications = notifications || []),
+      error: () => {},
     });
   }
 
@@ -120,12 +142,14 @@ export class LayoutComponent implements OnInit {
   markAllNotificationsRead() {
     this.recentNotifications.forEach(n => n.read = true);
     this.unreadCount = 0;
+    this.notificationService.markAllRead().subscribe({ error: () => {} });
   }
 
   markNotificationRead(notification: any) {
     if (!notification.read) {
       notification.read = true;
       this.unreadCount = Math.max(0, this.unreadCount - 1);
+      this.notificationService.markRead(notification._id).subscribe({ error: () => {} });
     }
   }
 

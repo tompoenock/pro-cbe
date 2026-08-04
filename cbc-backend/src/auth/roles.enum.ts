@@ -3,6 +3,7 @@ export enum Role {
   Student = 'student',
   Admin = 'admin',
   Teacher = 'teacher',
+  ClassTeacher = 'class_teacher',
   Parent = 'parent',
   SuperAdmin = 'super_admin',
 }

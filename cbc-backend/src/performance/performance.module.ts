@@ -4,9 +4,11 @@ import { Performance, PerformanceSchema } from './entities/performance.schema';
 import { Student, StudentSchema } from '../students/entities/student.schema';
 import { Subject, SubjectSchema } from '../subjects/entities/subject.schema';
 import { Class, ClassSchema } from '../classes/entities/class.schema';
+import { User, UserSchema } from '../auth/entities/user.schema';
 import { PerformanceService } from './performance.service';
 import { PerformanceController } from './performance.controller';
 import { GradingModule } from '../grading/grading.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -15,8 +17,10 @@ import { GradingModule } from '../grading/grading.module';
       { name: Student.name, schema: StudentSchema },
       { name: Subject.name, schema: SubjectSchema },
       { name: Class.name, schema: ClassSchema },
+      { name: User.name, schema: UserSchema },
     ]),
     GradingModule,
+    NotificationsModule,
   ],
   controllers: [PerformanceController],
   providers: [PerformanceService],

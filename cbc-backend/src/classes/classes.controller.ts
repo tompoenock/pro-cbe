@@ -23,6 +23,9 @@ export class ClassesController {
     if (req?.user?.role === Role.Teacher) {
       return this.classesService.findAllForTeacher(req.user._id, academicYear);
     }
+    if (req?.user?.role === Role.ClassTeacher) {
+      return this.classesService.findAllForClassTeacher(req.user._id, academicYear);
+    }
     return this.classesService.findAll(academicYear);
   }
 
@@ -40,6 +43,12 @@ export class ClassesController {
   @Roles(Role.Admin, Role.SuperAdmin)
   update(@Param('id') id: string, @Body() dto: UpdateClassDto) {
     return this.classesService.update(id, dto);
+  }
+
+  @Put(':id/class-teacher')
+  @Roles(Role.Admin, Role.SuperAdmin)
+  assignClassTeacher(@Param('id') id: string, @Body('classTeacherId') classTeacherId: string) {
+    return this.classesService.assignClassTeacher(id, classTeacherId);
   }
 
   @Delete(':id')

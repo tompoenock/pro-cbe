@@ -1,0 +1,66 @@
+<div>
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-2xl font-bold" [class]="darkMode ? 'text-white' : 'text-gray-800'">Notifications</h2>
+    <div class="flex gap-2">
+      <button (click)="loadNotifications()" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+        ↻ Refresh
+      </button>
+      <button (click)="markAllRead()" [disabled]="unreadCount === 0"
+        class="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 disabled:opacity-40 transition-colors">
+        Mark All as Read
+      </button>
+    </div>
+  </div>
+
+  @if (error) { <div class="mb-4 p-3 rounded-lg bg-red-100 text-red-800 text-sm">{{ error }}</div> }
+
+  <div class="grid gap-3 sm:grid-cols-3 mb-6">
+    <div class="rounded-xl p-4 border" [class]="darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200 shadow-sm'">
+      <p class="text-xs uppercase tracking-wider" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">Total</p>
+      <p class="mt-2 text-2xl font-semibold" [class]="darkMode ? 'text-white' : 'text-gray-900'">{{ notifications.length }}</p>
+    </div>
+    <div class="rounded-xl p-4 border" [class]="darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200 shadow-sm'">
+      <p class="text-xs uppercase tracking-wider" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">Unread</p>
+      <p class="mt-2 text-2xl font-semibold text-blue-600">{{ unreadCount }}</p>
+    </div>
+    <div class="rounded-xl p-4 border" [class]="darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200 shadow-sm'">
+      <p class="text-xs uppercase tracking-wider" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">Read</p>
+      <p class="mt-2 text-2xl font-semibold text-emerald-600">{{ notifications.length - unreadCount }}</p>
+    </div>
+  </div>
+
+  <div class="mb-4">
+    <input [(ngModel)]="filter" placeholder="Search notifications..." (keyup.enter)="loadNotifications()"
+      class="px-3 py-2 rounded-lg border text-sm outline-none w-full md:w-96"
+      [class]="darkMode ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-400' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'" />
+  </div>
+
+  <div class="rounded-xl overflow-hidden" [class]="darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-gray-200 shadow-sm'">
+    @if (loading) {
+      <div class="p-8 text-center" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">Loading...</div>
+    } @else if (filteredNotifications.length === 0) {
+      <div class="p-8 text-center" [class]="darkMode ? 'text-slate-400' : 'text-gray-500'">No notifications found.</div>
+    } @else {
+      <div class="divide-y" [class]="darkMode ? 'divide-slate-700' : 'divide-gray-100'">
+        @for (n of filteredNotifications; track n._id) {
+          <div (click)="markRead(n)" class="p-4 cursor-pointer transition-colors"
+            [class]="darkMode ? 'hover:bg-slate-700/40' : 'hover:bg-gray-50'">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex-1">
+                <div class="flex items-center gap-2 flex-wrap">
+                  @if (!n.read) {
+                    <span class="w-2 h-2 rounded-full bg-blue-500 shrink-0"></span>
+                  }
+                  <span class="text-sm font-semibold" [class]="darkMode ? 'text-white' : 'text-gray-900'">{{ n.title }}</span>
+                  <span [class]="getTypeBadgeClasses(n.type)">{{ getTypeLabel(n.type) }}</span>
+                </div>
+                <p class="text-sm mt-1" [class]="darkMode ? 'text-slate-300' : 'text-gray-600'">{{ n.message }}</p>
+                <p class="text-xs mt-1" [class]="darkMode ? 'text-slate-500' : 'text-gray-400'">{{ formatDate(n.createdAt) }}</p>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>

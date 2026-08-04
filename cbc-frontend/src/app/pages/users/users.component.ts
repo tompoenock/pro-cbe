@@ -57,6 +57,7 @@ export class UsersComponent implements OnInit {
     { value: 'admin', label: 'Admin' },
     { value: 'super_admin', label: 'Super Admin' },
     { value: 'teacher', label: 'Teacher' },
+    { value: 'class_teacher', label: 'Class Teacher' },
     { value: 'parent', label: 'Parent' },
     { value: 'user', label: 'User' },
   ];

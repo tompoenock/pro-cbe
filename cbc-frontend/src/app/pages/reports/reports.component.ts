@@ -39,8 +39,9 @@ export class ReportsComponent implements OnInit {
   darkMode = false;
   classes: any[] = [];
 
-  subjectScoresColorScheme: Color = { name: 'subjectScores', selectable: true, group: ScaleType.Ordinal, domain: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#0ea5e9'] };
-  termTrendsColorScheme: Color = { name: 'termTrends', selectable: true, group: ScaleType.Ordinal, domain: ['#06b6d4', '#22c55e', '#f97316', '#a855f7', '#0ea5e9'] };
+  subjectScoresColorScheme: Color = { name: 'subjectScores', selectable: true, group: ScaleType.Ordinal, domain: ['#bae6fd', '#38bdf8', '#2563eb', '#1e3a8a'] };
+  termTrendsColorScheme: Color = { name: 'termTrends', selectable: true, group: ScaleType.Ordinal, domain: ['#bbf7d0', '#4ade80', '#16a34a', '#14532d'] };
+  marksLineColorScheme: Color = { name: 'marksLine', selectable: true, group: ScaleType.Linear, domain: ['#2563eb'] };
 
   // Per-pathway report state
   pathways: any[] = [];
@@ -175,7 +176,7 @@ export class ReportsComponent implements OnInit {
     private permissionService: PermissionService,
   ) {
     const role = this.authService.getUserRole() || localStorage.getItem('role') || sessionStorage.getItem('userRole') || '';
-    this.isTeacher = role === 'teacher' || role === 'admin' || role === 'super_admin' ? role === 'teacher' : false;
+    this.isTeacher = role === 'teacher' || role === 'class_teacher';
     this.isAdmin = role === 'admin' || role === 'super_admin';
     this.isParent = role === 'parent';
   }
@@ -906,6 +907,15 @@ export class ReportsComponent implements OnInit {
     return scores
       .map((s: any) => ({ name: s.subjectName || 'Unknown', value: Number(s.averageScore) || 0 }))
       .sort((a: any, b: any) => b.value - a.value);
+  }
+
+  getSubjectMarksLineChartData(): any[] {
+    const scores = this.selectedReport?.performanceSummary?.subjectScores;
+    if (!Array.isArray(scores)) return [];
+    const points = scores
+      .map((s: any) => ({ name: s.subjectName || 'Unknown', value: Number(s.averageScore) || 0 }))
+      .sort((a: any, b: any) => b.value - a.value);
+    return [{ name: 'Marks', series: points }];
   }
 
   getTermTrendsChartData(): any[] {
